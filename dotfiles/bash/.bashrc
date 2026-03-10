@@ -125,14 +125,14 @@ fi
 
 # -- Add user's executable files to PATH -------------------------------------
 if [[ -z $PATH_CONTAINS_USER_SCRIPTS ]] ; then
-  if [ -d $HOME/scripts ]; then
+  if [ -d "$HOME/scripts" ]; then
     PATH="$HOME/scripts:$PATH"
     export PATH_CONTAINS_USER_SCRIPTS=TRUE
   fi
 fi
 
 if [[ -z $PATH_CONTAINS_USER_BIN ]] ; then
-  if [ -d $HOME/bin ]; then
+  if [ -d "$HOME/bin" ]; then
     PATH="$HOME/bin:$PATH"
     export PATH_CONTAINS_USER_BIN=TRUE
   fi
@@ -141,9 +141,9 @@ fi
 
 # -- Merge ~/.Xresources -----------------------------------------------------
 if [[ -z $XRESOURCES_MERGED ]] ; then
-  if [ -f $HOME/.Xresources ] ; then
+  if [ -f "$HOME/.Xresources" ] ; then
     if command -v xrdb > /dev/null; then
-      xrdb -merge $HOME/.Xresources
+      xrdb -merge "$HOME/.Xresources"
       export XRESOURCES_MERGED=TRUE
     fi
   fi

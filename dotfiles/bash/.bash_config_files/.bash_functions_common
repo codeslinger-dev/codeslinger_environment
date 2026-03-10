@@ -763,11 +763,11 @@ function find_command_location()
 {
     if [[ $# -eq 1 ]] ; then
 
-      if [[ "$(type -t ${1})" == "function" ]] ; then
+      if [[ "$(type -t "${1}")" == "function" ]] ; then
         shopt -s extdebug
-        declare -F ${1}
+        declare -F "${1}"
       else
-        type -a ${1}
+        type -a "${1}"
       fi
 
     fi
@@ -797,7 +797,7 @@ function xterm_with_color()
     fi
 
     xterm -ls                 \
-          -bd ${hl_color}     \
+          -bd "${hl_color}"   \
           -ms ${hl_color}     \
           -cr ${hl_color}     \
           -rw                 \
@@ -838,7 +838,7 @@ function xterm_invoke_ssh()
    local ssh_params="$@"
 
    xterm_set_title "Running: 'ssh ${ssh_params}'"
-   \ssh ${ssh_params}
+   \ssh "${ssh_params}"
 
 } # xterm_invoke_ssh()
 
@@ -855,7 +855,7 @@ function xterm_invoke_su()
    local su_params="$@"
 
    xterm_set_title "Running: 'su ${su_params}'"
-   \su ${su_params}
+   \su "${su_params}"
 
 } # xterm_invoke_su()
 
@@ -896,7 +896,7 @@ function print_rainbow_line()
 
 
   # Default value - single printf
-  if [ $count_max -eq 60 ]; then
+  if [ "$count_max" -eq 60 ]; then
 
     local line="$TC_RED$c$TC_YEL$c$TC_GRN$c$TC_BLU$c$TC_CYN$c$TC_MAG$c"
 
@@ -910,9 +910,9 @@ function print_rainbow_line()
     # Print a character at a time, cycling colors
     for n in $(eval echo "{1..$count_max}") ; do
 
-        local col=${color_array[$count]}
+        local col="${color_array[$count]}"
 
-        printf "${col}%b" $c
+        printf "${col}%b" "$c"
 
         count=$(($count + 1))
         count=$(expr $count % 6)

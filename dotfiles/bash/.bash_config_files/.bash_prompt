@@ -12,8 +12,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # -- Source Common Functions, if not present ---------------------------------
 if [[ -z $FILE_SOURCED_FUNCTIONS_COMMON ]] ; then
-   if [ -f  ${SCRIPT_DIR}/.bash_functions_common ]; then
-     source ${SCRIPT_DIR}/.bash_functions_common
+   if [ -f  "${SCRIPT_DIR}/.bash_functions_common" ]; then
+     source "${SCRIPT_DIR}/.bash_functions_common"
    fi
 fi
 
@@ -59,7 +59,7 @@ function font()
             formatted="\[${esc}[${2};${3};${4};${5};${1};5;${6}m\]"
         ;;
     esac
-    echo ${formatted}
+    echo "${formatted}"
 
 } # font()
 

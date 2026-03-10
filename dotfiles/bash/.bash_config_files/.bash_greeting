@@ -18,9 +18,9 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 
 # -- Source Common Functions, if not present ---------------------------------
-if [ -z $FILE_SOURCED_FUNCTIONS_COMMON ]; then
-   if [ -f  ${SCRIPT_DIR}/.bash_functions_common ]; then
-     source ${SCRIPT_DIR}/.bash_functions_common
+if [ -z "$FILE_SOURCED_FUNCTIONS_COMMON" ]; then
+   if [ -f  "${SCRIPT_DIR}/.bash_functions_common" ]; then
+     source "${SCRIPT_DIR}/.bash_functions_common"
    fi
 fi
 
@@ -60,7 +60,7 @@ function display_system_uptime()
     s/  / /; s/, *[[:digit:]]* users?.*//')
   fi
 
-  echo ${UPTIME}
+  echo "${UPTIME}"
 
 } # display_system_uptime()
 
@@ -122,7 +122,7 @@ function display_processor_name()
     CPU_NAME="---"
   fi
 
-  echo ${CPU_NAME}
+  echo "${CPU_NAME}"
 
 } # display_processor_name()
 
@@ -174,7 +174,7 @@ function display_num_cpu_cores()
     NUM_CPU_CORES=1
   fi
 
-  echo ${NUM_CPU_CORES}
+  echo "${NUM_CPU_CORES}"
 
 } # display_num_cpu_cores()
 
@@ -198,17 +198,17 @@ function display_num_cpu_hwthreads()
   if [ "$?" -eq 0 ]; then
     threads_per_core=$(lscpu | grep "Thread(s) per core:" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
   else
-    threads_per_core=$( echo `getconf _NPROCESSORS_ONLN` / ${num_cores} | bc )
+    threads_per_core=$( echo "$(getconf _NPROCESSORS_ONLN)" / "${num_cores}" | bc )
   fi
 
   # Set minimum to 1
-  if [ ${threads_per_core} -lt 1 ]; then
+  if [ "${threads_per_core}" -lt 1 ]; then
     threads_per_core=1
   fi
 
   NUM_CPU_HWTHREADS=$( echo "${num_cores} * ${threads_per_core}" | bc )
 
-  echo ${NUM_CPU_HWTHREADS}
+  echo "${NUM_CPU_HWTHREADS}"
 
 } # display_num_cpu_hwthreads()
 
@@ -223,11 +223,11 @@ function display_num_cpu_hwthreads()
 function display_home_size_total()
 {
   # Attempt 1
-  HOME_SIZE=`df -h ~ |  grep -v "Size" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r '`
+  HOME_SIZE=$(df -h ~ |  grep -v "Size" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
 
   # Attempt 2
   if [[ -z "$HOME_SIZE" ]]; then
-    HOME_SIZE=`df -h |  grep "home" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r '`
+    HOME_SIZE=$(df -h |  grep "home" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
   fi
 
   # Out of options:  Default value
@@ -235,7 +235,7 @@ function display_home_size_total()
     HOME_SIZE="---"
   fi
 
-  echo ${HOME_SIZE}
+  echo "${HOME_SIZE}"
 
 } # display_home_size_total()
 
@@ -250,11 +250,11 @@ function display_home_size_total()
 function display_home_size_free()
 {
   # Attempt 1
-  HOME_FREE=`df -h ~ |  grep -v "Size" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r '`
+  HOME_FREE=$(df -h ~ |  grep -v "Size" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
 
   # Attempt 2
   if [[ -z "$HOME_FREE" ]]; then
-    HOME_FREE=`df -h |  grep "home" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r '`
+    HOME_FREE=$(df -h |  grep "home" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
   fi
 
   # Out of options:  Default value
@@ -262,7 +262,7 @@ function display_home_size_free()
     HOME_FREE="---"
   fi
 
-  echo ${HOME_FREE}
+  echo "${HOME_FREE}"
 
 } # display_home_size_free()
 
@@ -313,7 +313,7 @@ function display_mem_total()
     MEM_SIZE=$( echo "scale=1 ; ${MEM_SIZE} / 1024 / 1024" | bc )
   fi
 
-  echo ${MEM_SIZE}
+  echo "${MEM_SIZE}"
 
 } # display_mem_total()
 
@@ -366,7 +366,7 @@ function display_mem_free()
     MEM_FREE=$( echo "scale=1 ;${MEM_FREE} / 1024 / 1024" | bc )
   fi
 
-  echo ${MEM_FREE}
+  echo "${MEM_FREE}"
 
 } # display_mem_free()
 

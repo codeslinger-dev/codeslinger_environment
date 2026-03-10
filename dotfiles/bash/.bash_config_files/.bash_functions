@@ -37,20 +37,20 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 
 # -- Source Common functions -------------------------------------------------
-if [ -f  ${SCRIPT_DIR}/.bash_functions_common ]; then
-  source ${SCRIPT_DIR}/.bash_functions_common
+if [ -f  "${SCRIPT_DIR}/.bash_functions_common" ]; then
+  source "${SCRIPT_DIR}/.bash_functions_common"
 fi
 
 
 # -- Source Search functions -------------------------------------------------
-if [ -f  ${SCRIPT_DIR}/.bash_functions_search ]; then
-  source ${SCRIPT_DIR}/.bash_functions_search
+if [ -f  "${SCRIPT_DIR}/.bash_functions_search" ]; then
+  source "${SCRIPT_DIR}/.bash_functions_search"
 fi
 
 
 # -- Source GIT functions ----------------------------------------------------
-if [ -f  ${SCRIPT_DIR}/.bash_functions_git ]; then
-  source ${SCRIPT_DIR}/.bash_functions_git
+if [ -f  "${SCRIPT_DIR}/.bash_functions_git" ]; then
+  source "${SCRIPT_DIR}/.bash_functions_git"
 fi
 
 
