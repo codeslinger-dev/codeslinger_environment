@@ -1,0 +1,42 @@
+! ----------------------------------------------------------------------------
+! Store selected contents of this file in:
+!    ~/.Xresources
+!
+! Merge the contents into your active Xsession with:
+!    xrdb -merge ~/.Xresources
+! ----------------------------------------------------------------------------
+
+
+! ************************************
+! XTerm default settings
+!
+     *customization:     -color
+XTerm*termName:           xterm-256color
+
+XTerm*renderFont:         true
+XTerm*faceName:           Monospace:antialias=true
+XTerm*faceSize:           9.5
+
+XTerm*dynamicColors:      true
+XTerm*background:         #171717
+XTerm*foreground:         #fdfdfd
+XTerm*cursorColor:        #ffff00
+XTerm*borderColor:        #ffff00
+XTerm*pointerColor:       #ffff00
+
+XTerm*geometry:           220x32
+
+XTerm*allowTitleOps:      true
+XTerm*visualBell:         false
+XTerm*highlightSelection: true
+XTerm*internalBorder:     3
+
+XTerm*saveLines:          32768
+XTerm*scrollBar:          true
+XTerm*scrollKey:          true
+XTerm*scrollTTYOutput:    false
+XTerm*scrollBarBorder:    2
+XTerm*rightScrollBar:     false
+XTerm*scrollBar.width:    10
+
+

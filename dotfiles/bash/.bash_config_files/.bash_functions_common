@@ -1,0 +1,1107 @@
+# ----------------------------------------------------------------------------
+# -- BASH Functions (Common) -------------------------------------------------
+#
+# This file defines the Common functions to be used in a Bash session.
+#
+# This file is intended to be "sourced" by .bashrc (or equivalent):
+#
+#    if [ -f /<path>/.bash_functions_common ]; then
+#     source /<path>/.bash_functions_common
+#    fi
+#
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+#  PUBLIC CONSTANTS:  ANSI Terminal color codes (8/16 colors)
+# ----------------------------------------------------------------------------
+
+# OCTAL (useful for most BASH processing)
+export oTC_BLK='\033[0;30m'
+export oTC_GRY='\033[0;37m'
+export oTC_DRK='\033[0;90m'
+export oTC_RED='\033[0;91m'
+export oTC_GRN='\033[0;92m'
+export oTC_YEL='\033[0;93m'
+export oTC_BLU='\033[0;94m'
+export oTC_MAG='\033[0;95m'
+export oTC_CYN='\033[0;96m'
+export oTC_WHT='\033[0;97m'
+export oTC_OFF='\033[0m'
+
+# HEXIDECIMAL (useful for 'sed' commands)
+export xTC_BLK='\x1b[0;30m'
+export xTC_GRY='\x1b[0;37m'
+export xTC_DRK='\x1b[0;90m'
+export xTC_RED='\x1b[0;91m'
+export xTC_GRN='\x1b[0;92m'
+export xTC_YEL='\x1b[0;93m'
+export xTC_BLU='\x1b[0;94m'
+export xTC_MAG='\x1b[0;95m'
+export xTC_CYN='\x1b[0;96m'
+export xTC_WHT='\x1b[0;97m'
+export xTC_OFF='\x1b[0m'
+
+# BINARY (for completeness)
+export bTC_BLK='\u001b[0;30m'
+export bTC_GRY='\u001b[0;37m'
+export bTC_DRK='\u001b[0;90m'
+export bTC_RED='\u001b[0;91m'
+export bTC_GRN='\u001b[0;92m'
+export bTC_YEL='\u001b[0;93m'
+export bTC_BLU='\u001b[0;94m'
+export bTC_MAG='\u001b[0;95m'
+export bTC_CYN='\u001b[0;96m'
+export bTC_WHT='\u001b[0;97m'
+export bTC_OFF='\u001b[0m'
+
+# Default
+export  TC_BLK=$oTC_BLK
+export  TC_GRY=$oTC_GRY
+export  TC_DRK=$oTC_DRK
+export  TC_RED=$oTC_RED
+export  TC_GRN=$oTC_GRN
+export  TC_YEL=$oTC_YEL
+export  TC_BLU=$oTC_BLU
+export  TC_MAG=$oTC_MAG
+export  TC_CYN=$oTC_CYN
+export  TC_WHT=$oTC_WHT
+export  TC_OFF=$oTC_OFF
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: confirm_choice
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : This is a general-purpose function to ask Yes/No questions
+#                 in Bash, either with or without a default answer. It keeps
+#                 repeating the question until it gets a valid answer.
+#
+#                 Example:  Default to 'Yes' if the user presses enter
+#                           without giving an answer:
+#
+#                           if confirm_choice "Do you want to proceed?" Y; then
+#                             echo "Yes"
+#                           else
+#                             echo "No"
+#                           fi
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Text string to display as prompt
+#                 $2 = Default answer (Y or N)  [optional]
+# ----------------------------------------------------------------------------
+function confirm_choice()
+{
+    # Don't pollute external environment
+    local question=${1}
+    local choice
+    local default
+    local reply
+
+    # Requested "Y" as the default answer
+    if [ "${2:-}" = "Y" ]; then
+        choice="Y/n"
+        default=Y
+
+    # Requested "N" as the default answer
+    elif [ "${2:-}" = "N" ]; then
+        choice="y/N"
+        default=N
+
+    # No default answer requested
+    else
+        choice="y/n"
+        default=
+    fi
+
+    # Continue until a recognized answer is provided
+    while true; do
+
+        # Display the prompt
+        #  - intentionally not using "read -p"
+        #    as it uses stderr not stdout
+        echo -e -n "$question [$choice]: "
+
+        # Read the response
+        #  - use /dev/tty in case stdin is
+        #    redirected from somewhere else
+        read reply </dev/tty
+
+        # Use default?
+        if [[ -z "$reply" ]] ; then
+            reply=$default
+        fi
+
+        # Check if the reply is valid
+        case "$reply" in
+            Y*|y*) return 0 ;;
+            N*|n*) return 1 ;;
+        esac
+
+    done
+
+} # confirm_choice()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: colorize
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pipe input to this function to randomly
+#                 colorize every character (7 colors)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function colorize()
+{
+    while IFS= read -r -n 1 -d '' c ; do
+        color=$((RANDOM % 7 + 91))
+        printf '\033[0;%dm%s\e[0m' "$color" "$c"
+    done
+
+} # colorize()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: colorize_8bit
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pipe input to this function to randomly
+#                 colorize every character (256 colors)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function colorize_8bit()
+{
+    while IFS= read -r -n 1 -d '' c ; do
+        color=$((RANDOM % 256))
+        printf '\033[38;5;%dm%s\033[0m' "$color" "$c"
+    done
+
+} # colorize_8bit()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: colorize_gradient
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pipe input to this function to apply a wave-like gradient
+#                 of color to each line.  Optionally highlighting provided
+#                 strings.
+#
+#                 Example usage, colorizing a log file and highlighting
+#                 every occurance of the string "ERROR" in the file:
+#
+#                    tail -n +1 -f logfile.txt | colorize_gradient_fast "ERROR"
+#
+#                 With multiple strings to highlight in multiple colors:
+#
+#                    tail -f file.txt | colorize_gradient_fast           \
+#                                         "ERROR"                        \
+#                                         --color "WARN"         yellow  \
+#                                         --color "Job complete" green
+#
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = <optional>  Provide a string to HIGHLIGHT if found
+# ----------------------------------------------------------------------------
+function colorize_gradient()
+{
+    local width=$(tput cols)
+
+    # Generate dynamic palette based on terminal width
+    local -a palette_colors=()
+    local denom=$(( width > 1 ? width - 1 : 1 ))
+
+    # Generate colors using HSV hue rotation (0-300 degrees)
+    for ((x=0; x<width; x++)); do
+        local hue=$(( (x * 300) / denom ))
+        local r g b
+
+        # Convert HSV to RGB using standard formula
+        if   ((hue <  60)); then 
+            r=5; g=$((hue * 5 / 60)); b=0
+        elif ((hue < 120)); then 
+            r=$((5 - (hue - 60) * 5 / 60)); g=5; b=0
+        elif ((hue < 180)); then 
+            r=0; g=5; b=$(((hue - 120) * 5 / 60))
+        elif ((hue < 240)); then 
+            r=0; g=$((5 - (hue - 180) * 5 / 60)); b=5
+        elif ((hue < 300)); then 
+            r=$(((hue - 240) * 5 / 60)); g=0; b=5
+        else 
+            r=5; g=0; b=5
+        fi
+
+        # Convert RGB (0-5) to ANSI 256 color code (16-255)
+        local ansi_code=$((16 + r*36 + g*6 + b))
+        palette_colors+=("$ansi_code $ansi_code")  # repeat each color for smoothing
+    done
+
+    local palette="${palette_colors[*]}"
+    local palette_len=$((width * 2))
+
+    declare -A highlight_map=()
+    declare -A color_codes=(
+        [red]=196 [green]=46 [yellow]=226 [blue]=21
+        [magenta]=201 [cyan]=51 [white]=231 [black]=16
+    )
+
+    # Create a LUT for auto-contrasting text colors (white vs black)
+    declare -a best_text_contrast_colors
+    for code in {16..255}; do
+        r=$(( ((code-16)/36)*51 ))
+        g=$(( (((code-16)%36)/6)*51 ))
+        b=$(( ((code-16)%6)*51 ))
+        Y=$(( (299*r + 587*g + 114*b)/1000 ))
+        if (( Y > 128 )); then
+            best_text_contrast_colors[$code]=30   # black
+        else
+            best_text_contrast_colors[$code]=37   # white
+        fi
+    done
+
+    # Parse keyword/color arguments
+    local pre_color_args=()
+    local post_color_args=()
+    local in_post_color=0
+    for arg in "$@"; do
+        if [[ "$arg" == "--color" ]]; then
+            in_post_color=1; continue
+        fi
+        if (( in_post_color )); then
+            post_color_args+=("$arg")
+        else
+            pre_color_args+=("$arg")
+        fi
+    done
+    for kw in "${pre_color_args[@]}"; do
+        highlight_map["$kw"]=196
+    done
+    local i=0
+    while (( i < ${#post_color_args[@]} )); do
+        local kw="${post_color_args[i]}"; ((i++))
+        local bg="${post_color_args[i]:-196}"; ((i++))
+        if [[ "$bg" =~ ^[0-9]{1,3}$ ]] && (( bg >=0 && bg <=255 )); then
+            highlight_map["$kw"]="$bg"
+        else
+            highlight_map["$kw"]="${color_codes[$bg]:-196}"
+        fi
+    done
+
+    # Build awk keyword array and contrast LUT
+    local awk_kw_array=""
+    for kw in "${!highlight_map[@]}"; do
+        awk_kw_array+="kw[\"$kw\"]=${highlight_map[$kw]};"
+    done
+    
+    local awk_contrast_array=""
+    for code in {16..255}; do
+        awk_contrast_array+="contrast[$code]=${best_text_contrast_colors[$code]};"
+    done
+
+    # Pipe through awk with dynamic palette and full contrast LUT
+    awk -v palette="$palette" \
+        -v plen="$palette_len" \
+        -v width="$width" \
+        -v kwdefs="$awk_kw_array" \
+        -v contrast_defs="$awk_contrast_array" '
+        BEGIN {
+            n=split(palette, P, " ")
+            split(kwdefs, kv, ";")
+            for (i in kv) {
+                if (kv[i] == "") continue
+                split(kv[i], pair, "=")
+                sub(/^kw\["/, "", pair[1])
+                sub(/"\]$/, "", pair[1])
+                KW[pair[1]] = pair[2]
+            }
+            split(contrast_defs, cv, ";")
+            for (i in cv) {
+                if (cv[i] == "") continue
+                split(cv[i], pair, "=")
+                sub(/^contrast\[/, "", pair[1])
+                sub(/\]$/, "", pair[1])
+                contrast[pair[1]] = pair[2]
+            }
+        }
+        {
+            line=$0
+            for (k in KW) {
+                gsub(k, "\x01"k"\x02", line)   # mark keywords with control markers
+            }
+            out=""
+            j=1
+            col=1
+            while (j <= length(line)) {
+                c = substr(line,j,1)
+                if (c == "\x01") {     # start keyword
+                    j++
+                    kwtext=""
+                    while (j <= length(line) && substr(line,j,1) != "\x02") {
+                        kwtext = kwtext substr(line,j,1)
+                        j++
+                    }
+                    j++ # skip \x02
+                    bg = KW[kwtext]
+                    r = int(((bg-16)/36)*51)
+                    g = int((((bg-16)%36)/6)*51)
+                    b = int(((bg-16)%6)*51)
+                    lum = int((299*r + 587*g + 114*b)/1000)
+                    if (lum > 128) fg=30; else fg=37
+                    out = out sprintf("\033[%d;48;5;%dm%s\033[0m", fg, bg, kwtext)
+                    col += length(kwtext)
+                    continue
+                }
+                idx = ((col - NR) % width + width) % width
+                out = out sprintf("\033[38;5;%sm%s", P[idx*2+1], c)
+                j++
+                col++
+            }
+            print out "\033[0m"
+        }'
+
+} #colorize_gradient()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: colorize_gradient_24bit
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pipe input to this function to apply a wave-like gradient
+#                 of color to each line.  Optionally highlighting provided
+#                 strings.
+#
+#                 NOTE that this function is ~2x slower than 8-bit gradient.
+#
+#                 Range: 24-bit (16,777,216-color)
+#
+#                 Example usage, colorizing a log file and highlighting
+#                 every occurance of the string "ERROR" in the file:
+#
+#                    tail -n +1 -f logfile.txt | colorize_gradient_24bit "ERROR"
+#
+#                 With multiple strings to highlight in multipel colors:
+#
+#                    tail -f file.txt | colorize_gradient_24bit          \
+#                                         "ERROR"                        \
+#                                         --color "WARN"         yellow  \
+#                                         --color "Job complete" green
+#
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = <optional>  Provde a string to HIGHLIGHT if found
+# ----------------------------------------------------------------------------
+function colorize_gradient_24bit()
+{
+    local width=$(tput cols)
+    
+    # Generate dynamic 24-bit RGB palette based on terminal width
+    # Uses 0-1530 range for smooth 6-segment rainbow (R→Y→G→C→B→M)
+    local -a palette_colors=()
+    local denom=$(( width > 1 ? width - 1 : 1 ))
+
+    # Generate RGB values using 1530-point rainbow
+    for ((x=0; x<width; x++)); do
+        local pos=$(( x * 1530 / denom ))
+        local r g b
+
+        # Convert position to RGB
+        if   (( pos < 255  )); then r=255;           g=$pos;          b=0
+        elif (( pos < 510  )); then r=$((510-pos));  g=255;           b=0
+        elif (( pos < 765  )); then r=0;             g=255;           b=$((pos-510))
+        elif (( pos < 1020 )); then r=0;             g=$((1020-pos)); b=255
+        elif (( pos < 1275 )); then r=$((pos-1020)); g=0;             b=255
+        else                        r=255;           g=0;             b=$((1530-pos))
+        fi
+
+        palette_colors+=("$r:$g:$b")
+    done
+
+    local palette="${palette_colors[*]}"
+    local palette_len=$width
+
+    declare -A kw_highlight_map=()    # keyword -> background ANSI code
+
+    # Map of named colors to ANSI 256 codes
+    declare -A color_codes=(
+        [red]=196 [green]=46 [yellow]=226 [blue]=21
+        [magenta]=201 [cyan]=51 [white]=231 [black]=16
+    )
+
+    # Create a LUT for auto-contrasting text colors (white vs black)
+    declare -a best_text_contrast_colors
+    for code in {16..255}; do
+        r=$(( ((code-16)/36)*51 ))
+        g=$(( (((code-16)%36)/6)*51 ))
+        b=$(( ((code-16)%6)*51 ))
+        lum=$(( (299*r + 587*g + 114*b)/1000 ))
+        if (( lum > 128 )); then
+            best_text_contrast_colors[$code]=30   # black
+        else
+            best_text_contrast_colors[$code]=37   # white
+        fi
+    done
+
+    # Parse keyword/color arguments
+    local pre_color_args=()
+    local post_color_args=()
+    local in_post_color=0
+
+    # Split arguments at --color
+    for arg in "$@"; do
+        if [[ "$arg" == "--color" ]]; then
+            in_post_color=1
+            continue
+        fi
+        if (( in_post_color )); then
+            post_color_args+=("$arg")
+        else
+            pre_color_args+=("$arg")
+        fi
+    done
+
+    # Default highlights: RED background
+    for kw in "${pre_color_args[@]}"; do
+        kw_highlight_map["$kw"]=196
+    done
+
+    # Custom highlights after --color
+    local i=0
+    while (( i < ${#post_color_args[@]} )); do
+        local kw="${post_color_args[i]}"
+        ((i++))
+        local bg="${post_color_args[i]:-196}"  # default RED
+        ((i++))
+        if [[ "$bg" =~ ^[0-9]{1,3}$ ]] && (( bg >=0 && bg <=255 )); then
+            kw_highlight_map["$kw"]="$bg"
+        else
+            kw_highlight_map["$kw"]="${color_codes[$bg]:-196}"
+        fi
+    done
+
+    # Build awk keyword array and contrast LUT
+    local awk_kw_array=""
+    for kw in "${!kw_highlight_map[@]}"; do
+        awk_kw_array+="kw[\"$kw\"]=${kw_highlight_map[$kw]};"
+    done
+
+    local awk_contrast_array=""
+    for code in {16..255}; do
+        awk_contrast_array+="contrast[$code]=${best_text_contrast_colors[$code]};"
+    done
+
+    # Pipe through awk with dynamic 24-bit RGB palette
+    awk -v palette="$palette" \
+        -v plen="$palette_len" \
+        -v width="$width" \
+        -v kwdefs="$awk_kw_array" \
+        -v contrast_defs="$awk_contrast_array" '
+        BEGIN {
+            n=split(palette, P, " ")
+            split(kwdefs, kv, ";")
+            for (i in kv) {
+                if (kv[i] == "") continue
+                split(kv[i], pair, "=")
+                sub(/^kw\["/, "", pair[1])
+                sub(/"\]$/, "", pair[1])
+                KW[pair[1]] = pair[2]
+            }
+            split(contrast_defs, cv, ";")
+            for (i in cv) {
+                if (cv[i] == "") continue
+                split(cv[i], pair, "=")
+                sub(/^contrast\[/, "", pair[1])
+                sub(/\]$/, "", pair[1])
+                contrast[pair[1]] = pair[2]
+            }
+        }
+        {
+            line=$0
+            for (k in KW) {
+                gsub(k, "\x01"k"\x02", line)   # mark keywords with control markers
+            }
+            out=""
+            j=1
+            col=1
+            while (j <= length(line)) {
+                c = substr(line,j,1)
+                if (c == "\x01") {     # start keyword
+                    j++
+                    kwtext=""
+                    while (j <= length(line) && substr(line,j,1) != "\x02") {
+                        kwtext = kwtext substr(line,j,1)
+                        j++
+                    }
+                    j++ # skip \x02
+                    bg = KW[kwtext]
+                    r = int(((bg-16)/36)*51)
+                    g = int((((bg-16)%36)/6)*51)
+                    b = int(((bg-16)%6)*51)
+                    lum = int((299*r + 587*g + 114*b)/1000)
+                    if (lum > 128) fg=30; else fg=37
+                    out = out sprintf("\033[%d;48;5;%dm%s\033[0m", fg, bg, kwtext)
+                    col += length(kwtext)
+                    continue
+                }
+                idx = ((col - NR) % width + width) % width
+                split(P[idx+1], rgb, ":")
+                out = out sprintf("\033[38;2;%s;%s;%sm%s", rgb[1], rgb[2], rgb[3], c)
+                j++
+                col++
+            }
+            print out "\033[0m"
+        }'
+
+} # colorize_gradient_24bit()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: colorize_gradient_fixed_generate_palette
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Generate a dynamic rainbow color palette for use with
+#                 colorize_gradient_fixed(). Takes a palette length and outputs
+#                 ANSI 256 color codes suitable for pasting into the palette
+#                 variable.
+#
+#                 Uses the same HSV-to-ANSI 256 algorithm as colorize_gradient()
+#                 to create smooth rainbow transitions.
+#
+#                 Example:  Generate a 54-color palette:
+#                    colorize_gradient_fixed_generate_palette 54
+#
+#                 Copy the output and paste into colorize_gradient_fixed()'s
+#                 palette variable definition.
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Palette length (number of colors to generate)
+# ----------------------------------------------------------------------------
+function colorize_gradient_fixed_generate_palette()
+{
+    local length=${1:-54}
+    
+    if (( length < 1 )); then
+        echo "Error: palette length must be >= 1" >&2
+        return 1
+    fi
+
+    local -a palette_colors=()
+    local denom=$(( length > 1 ? length - 1 : 1 ))
+
+    # Generate colors using HSV hue rotation (0-300 degrees)
+    for ((x=0; x<length; x++)); do
+        local hue=$(( (x * 300) / denom ))
+        local r g b
+        
+        # Convert HSV to RGB using standard formula
+        if   ((hue <  60)); then 
+            r=5; g=$((hue * 5 / 60)); b=0
+        elif ((hue < 120)); then 
+            r=$((5 - (hue - 60) * 5 / 60)); g=5; b=0
+        elif ((hue < 180)); then 
+            r=0; g=5; b=$(((hue - 120) * 5 / 60))
+        elif ((hue < 240)); then 
+            r=0; g=$((5 - (hue - 180) * 5 / 60)); b=5
+        elif ((hue < 300)); then 
+            r=$(((hue - 240) * 5 / 60)); g=0; b=5
+        else 
+            r=5; g=0; b=5
+        fi
+
+        # Convert RGB (0-5) to ANSI 256 color code (16-255)
+        local ansi_code=$((16 + r*36 + g*6 + b))
+        palette_colors+=("$ansi_code")
+    done
+
+    # Output in palette format (each color repeated twice for smoothing)
+    local first=1
+    for color in "${palette_colors[@]}"; do
+        if (( ! first )); then
+            echo -n " \\"
+            echo ""
+            echo -n "                   "
+        fi
+        echo -n "$color $color"
+        first=0
+    done
+    echo ""
+
+} # colorize_gradient_fixed_generate_palette()
+
+
+colorize_gradient_fixed() {
+
+    # Curated bright rainbow 256-color palette (~27 unique colors)
+    local palette=(196 196 \
+                   196 196 \
+                   202 202 \
+                   208 208 \
+                   208 208 \
+                   214 214 \
+                   220 220 \
+                   226 226 \
+                   226 226 \
+                   190 190 \
+                   154 154 \
+                   154 154 \
+                   118 118 \
+                    82  82 \
+                    46  46 \
+                    46  46 \
+                    47  47 \
+                    48  48 \
+                    48  48 \
+                    49  49 \
+                    50  50 \
+                    51  51 \
+                    51  51 \
+                    45  45 \
+                    39  39 \
+                    39  39 \
+                    33  33 \
+                    27  27 \
+                    21  21 \
+                    21  21 \
+                    57  57 \
+                    93  93 \
+                    93  93 \
+                   129 129 \
+                   165 165 \
+                   201 201 )
+
+    local palette_len=${#palette[@]}
+
+    declare -A highlight_map=()
+    declare -A color_codes=(
+        [red]=196 [green]=46 [yellow]=226 [blue]=21
+        [magenta]=201 [cyan]=51 [white]=231 [black]=16
+    )
+
+    # Parse keyword/color arguments
+    local pre_color_args=()
+    local post_color_args=()
+    local in_post_color=0
+    for arg in "$@"; do
+        if [[ "$arg" == "--color" ]]; then
+            in_post_color=1; continue
+        fi
+        if (( in_post_color )); then
+            post_color_args+=("$arg")
+        else
+            pre_color_args+=("$arg")
+        fi
+    done
+    for kw in "${pre_color_args[@]}"; do
+        highlight_map["$kw"]=196
+    done
+    local i=0
+    while (( i < ${#post_color_args[@]} )); do
+        local kw="${post_color_args[i]}"; ((i++))
+        local bg="${post_color_args[i]:-196}"; ((i++))
+        if [[ "$bg" =~ ^[0-9]{1,3}$ ]] && (( bg >=0 && bg <=255 )); then
+            highlight_map["$kw"]="$bg"
+        else
+            highlight_map["$kw"]="${color_codes[$bg]:-196}"
+        fi
+    done
+
+    # Build awk keyword array
+    local awk_kw_array=""
+    for kw in "${!highlight_map[@]}"; do
+        awk_kw_array+="kw[\"$kw\"]=${highlight_map[$kw]};"
+    done
+
+    # Pipe through awk
+    awk -v palette="$(IFS=,; echo "${palette[*]}")" \
+        -v plen="$palette_len" \
+        -v kwdefs="$awk_kw_array" '
+        BEGIN {
+            n=split(palette, P, ",")
+            split(kwdefs, kv, ";")
+            for (i in kv) {
+                if (kv[i] == "") continue
+                split(kv[i], pair, "=")
+                sub(/^kw\["/, "", pair[1])
+                sub(/"\]$/, "", pair[1])
+                KW[pair[1]] = pair[2]
+            }
+        }
+        {
+            line=$0
+            for (k in KW) {
+                gsub(k, "\x01"k"\x02", line)   # mark keywords with control markers
+            }
+            out=""
+            j=1
+            while (j <= length(line)) {
+                c = substr(line,j,1)
+                if (c == "\x01") {     # start keyword
+                    j++
+                    kwtext=""
+                    while (j <= length(line) && substr(line,j,1) != "\x02") {
+                        kwtext = kwtext substr(line,j,1)
+                        j++
+                    }
+                    j++ # skip \x02
+                    bg = KW[kwtext]
+                    r = int(((bg-16)/36)*51)
+                    g = int((((bg-16)%36)/6)*51)
+                    b = int(((bg-16)%6)*51)
+                    lum = int((299*r + 587*g + 114*b)/1000)
+                    if (lum > 128) fg=30; else fg=37
+                    out = out sprintf("\033[%d;48;5;%dm%s\033[0m", fg, bg, kwtext)
+                    continue
+                }
+                idx = ((j - NR) % plen + plen) % plen
+                out = out sprintf("\033[38;5;%sm%s", P[idx+1], c)
+                j++
+            }
+            print out "\033[0m"
+        }'
+
+} #colorize_gradient_fixed()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: find_command_location
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Find the source location of a command
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Command to locate
+# ----------------------------------------------------------------------------
+function find_command_location()
+{
+    if [[ $# -eq 1 ]] ; then
+
+      if [[ "$(type -t ${1})" == "function" ]] ; then
+        shopt -s extdebug
+        declare -F ${1}
+      else
+        type -a ${1}
+      fi
+
+    fi
+
+} # find_command_location()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: xterm_with_color
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Spawn an xterm with the provided color highlights
+#
+#                  -ls :  Login shell          [ XTerm*loginshell   ]
+#                  -bd :  Border color         [ XTerm*borderColor  ]
+#                  -ms :  Cursor color (mouse) [ XTerm*pointerColor ]
+#                  -cr :  Cursor color (text)  [ XTerm*cursorColor  ]
+#                  -rw :  Reverse wraparound   [ XTerm*reverseWrap  ]
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Color to use for highlights (default: magenta)
+# ----------------------------------------------------------------------------
+function xterm_with_color()
+{
+    local hl_color=${1}
+
+    if [[ -z ${hl_color} ]] ; then
+      hl_color="magenta"
+    fi
+
+    xterm -ls                 \
+          -bd ${hl_color}     \
+          -ms ${hl_color}     \
+          -cr ${hl_color}     \
+          -rw                 \
+          -title "[xterm]:" &
+
+} # xterm_with_color()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: xterm_set_title
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Dynamically set the title of the current xterm
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = String to set as new title
+# ----------------------------------------------------------------------------
+function xterm_set_title()
+{
+    case "$TERM" in
+    xterm*|rxvt*)
+        echo -ne "\033]0;${1}\007"
+        ;;
+    *)
+        ;;
+    esac
+
+} # xterm_set_title()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: xterm_invoke_ssh
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Change the xterm title prior to invoking 'ssh'
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = 'ssh' parameters
+# ----------------------------------------------------------------------------
+function xterm_invoke_ssh()
+{
+   local ssh_params="$@"
+
+   xterm_set_title "Running: 'ssh ${ssh_params}'"
+   \ssh ${ssh_params}
+
+} # xterm_invoke_ssh()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: xterm_invoke_su
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Change the xterm title prior to invoking 'su'
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = 'su' parameters
+# ----------------------------------------------------------------------------
+function xterm_invoke_su()
+{
+   local su_params="$@"
+
+   xterm_set_title "Running: 'su ${su_params}'"
+   \su ${su_params}
+
+} # xterm_invoke_su()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: print_rainbow_line
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Prints a dashed line in alternating colors.  User provides
+#                 the character and line length as the parameters.  The default
+#                 length uses a single print, while custom values incur a
+#                 performance penalty of a print per-character
+#
+#                 Unicode (UTF-8) characters are supported using
+#                 hexidecimal notation (ex: '\xc2\xbb')
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Character   (default:  -)
+#               : $2 = Line length (default: 60)
+# ----------------------------------------------------------------------------
+function print_rainbow_line()
+{
+  local color_array=($TC_RED $TC_YEL $TC_GRN $TC_BLU $TC_CYN $TC_MAG)
+  local count_max=60
+  local count=0
+  local c='-'
+
+  # Check for values provided
+  if [ $# -lt 2 ]; then
+     count_max=60
+  else
+     count_max=$2
+  fi
+
+  if [ $# -lt 1 ]; then
+     c='-'
+  else
+     c=$1
+  fi
+
+
+  # Default value - single printf
+  if [ $count_max -eq 60 ]; then
+
+    local line="$TC_RED$c$TC_YEL$c$TC_GRN$c$TC_BLU$c$TC_CYN$c$TC_MAG$c"
+
+    printf "%b%b%b%b%b%b%b%b%b%b${TC_OFF}\n"                   \
+                      "$line" "$line" "$line" "$line" "$line"  \
+                      "$line" "$line" "$line" "$line" "$line"
+
+  # Otherwise, looping printf
+  else
+
+    # Print a character at a time, cycling colors
+    for n in $(eval echo "{1..$count_max}") ; do
+
+        local col=${color_array[$count]}
+
+        printf "${col}%b" $c
+
+        count=$(($count + 1))
+        count=$(expr $count % 6)
+
+    done
+
+    # print newline
+    printf "${TC_OFF}\n"
+
+  fi
+
+} # print_rainbow_line()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: print_ansi_colors
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Prints (some) ANSI terminal color combinations
+#
+#                 Note:  Uses (mostly) the "vivid" color ranges
+#                         - foreground = ( 90 - 97)
+#                         - background = (100 -107)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function print_ansi_colors()
+{
+    echo ""
+
+    # Control Code Names
+    #                    0       1      2     3        4         5      6       7        8
+    local ctrl_names=("NORMAL" "BOLD" "DIM" "???" "UNDERLINE" "BLINK" "???" "REVERSE" "HIDDEN")
+
+    # Test all control combinations
+    for ctrl in 0 1 2 4 5 7 8; do
+      echo " Control: ${ctrl_names[${ctrl}]} "
+
+      # Each row - test all foreground (text-color) combinations
+      for fg in {30..37} {90..97}; do
+        echo -n "  "
+
+        # First column - make no background changes
+        echo -ne "\033[$ctrl;$fg""m\\\033[$ctrl;$fg""m\033[0m "
+
+        # Remaining columns - test all background combinations
+        for bg in {100..107}; do
+          # Set the attributes, print the attribute ansi codes, reset
+          echo -ne "\033[$ctrl;$fg;$bg""m\\\033[$ctrl;$fg;$bg""m\033[0m "
+        done
+        echo
+      done
+      echo ""
+    done
+
+    echo ""
+
+} # print_ansi_colors()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: log_get_current_timestamp
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Prints the current timestamp, for use with the logging
+#                 functions defined below
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function log_get_current_timestamp()
+{
+    local time_now=$(date +"%Y-%m-%d %H:%M:%S")
+    echo "${time_now}"
+}
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: log_error / log_warn / log_info / log_debug / log_na
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Prints the provided log message to stderr, pre-pending
+#                 it with timestamp and color-coded [<LOG-TYPE>]
+#
+#                 Usage:  log_error "This is an error msg"
+#                 Result: 1970-01-01 23:59:59 [ERROR] This is an error msg
+#
+#                 Can be disabled by defining "DISABLE_LOG_LEVEL_<name>"
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Message to print
+# ----------------------------------------------------------------------------
+function log_error()
+{
+    if [[ -z $DISABLE_LOG_LEVEL_ERROR ]]; then
+      local time_now=$(log_get_current_timestamp)
+      echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_RED}ERROR${TC_OFF}] ${1}" >&2
+    fi
+} # log_error()
+
+function log_warn()
+{
+    if [[ -z $DISABLE_LOG_LEVEL_WARN ]]; then
+      local time_now=$(log_get_current_timestamp)
+      echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_YEL} WARN${TC_OFF}] ${1}" >&2
+    fi
+} # log_warn()
+
+function log_info()
+{
+    if [[ -z $DISABLE_LOG_LEVEL_INFO ]]; then
+      local time_now=$(log_get_current_timestamp)
+      echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_MAG} INFO${TC_OFF}] ${1}" >&2
+    fi
+} # log_info()
+
+function log_debug()
+{
+    if [[ -z $DISABLE_LOG_LEVEL_DEBUG ]]; then
+      local time_now=$(log_get_current_timestamp)
+      echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_GRN}DEBUG${TC_OFF}] ${1}" >&2
+    fi
+} # log_debug()
+
+function log_na()
+{
+    local time_now=$(log_get_current_timestamp)
+    echo -e "${TC_DRK}${time_now}${TC_OFF} [ --- ] ${1}" >&2
+} # log_na()
+
+function log_echo()
+{
+    echo -e "${1}" >&2
+} # log_echo()
+
+
+function log_test_all()
+{
+    echo -e ""
+
+    log_error "log_error:  time is $(log_get_current_timestamp)"
+    sleep 0.1
+
+    log_warn  "log_warn:   time is $(log_get_current_timestamp)"
+    sleep 0.1
+
+    log_info  "log_info:   time is $(log_get_current_timestamp)"
+    sleep 0.1
+
+    log_debug "log_debug:  time is $(log_get_current_timestamp)"
+    sleep 0.1
+
+    log_na    "log_na:     time is $(log_get_current_timestamp)"
+    sleep 0.1
+
+    log_echo  "log_echo:   time is $(log_get_current_timestamp)"
+    sleep 0.1
+
+    echo -e ""
+
+} # log_test_all()
+
+
+# ----------------------------------------------------------------------------
+#  EXPORT PUBLIC FUNCTIONS :  Allows these functions to be used in
+#                             non-interactive bash shell scripts
+# ----------------------------------------------------------------------------
+export -f confirm_choice
+export -f colorize
+export -f colorize_8bit
+export -f colorize_gradient
+export -f colorize_gradient_24bit
+export -f colorize_gradient_fixed
+export -f colorize_gradient_fixed_generate_palette
+export -f find_command_location
+export -f xterm_with_color
+export -f xterm_set_title
+export -f xterm_invoke_ssh
+export -f xterm_invoke_su
+export -f print_rainbow_line
+export -f print_ansi_colors
+export -f log_get_current_timestamp
+export -f log_error
+export -f log_warn
+export -f log_info
+export -f log_debug
+export -f log_na
+export -f log_echo
+export -f log_test_all
+
+
+
+# -- File has been sourced ---------------------------------------------------
+FILE_SOURCED_FUNCTIONS_COMMON=TRUE
+
+# -- End of File  ------------------------------------------------------------
+# ----------------------------------------------------------------------------

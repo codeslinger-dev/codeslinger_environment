@@ -1,0 +1,258 @@
+# ----------------------------------------------------------------------------
+# -- BASH Functions (Search) -------------------------------------------------
+#
+# This file defines the Search functions to be used in a Bash session.
+#
+# This file is intended to be "sourced" by .bashrc (or similar):
+#
+#    if [ -f /<path>/.bash_functions_common ]; then
+#     source /<path>/.bash_functions_common
+#    fi
+#
+# ----------------------------------------------------------------------------
+
+
+# -- Fetch this file's directory ---------------------------------------------
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+
+# -- Source Common Functions, if not present ---------------------------------
+if [[ -z $FILE_SOURCED_FUNCTIONS_COMMON ]] ; then
+   if [ -f  ${SCRIPT_DIR}/.bash_functions_common ]; then
+     source ${SCRIPT_DIR}/.bash_functions_common
+   fi
+fi
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: func_find_undecorated
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Grep for pattern in provided file-list
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Search string
+#                 $2 = File filter (default is '*')
+# ----------------------------------------------------------------------------
+function func_find_undecorated()
+{
+  local file_filter
+
+  # If no file-filter was provided, set default to "*"
+  if [[ -z "$2" ]] ; then
+    file_filter="*"
+  else
+    file_filter="$2"
+  fi
+
+  # Search
+  grep -F -I -s -r -n --color=always --include="${file_filter}" "$1" ./
+
+} # func_find_undecorated()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: func_find_follow_undecorated
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Grep for pattern in provided file-list (follow symlinks)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Search string
+#                 $2 = File filter (default is '*')
+# ----------------------------------------------------------------------------
+function func_find_follow_undecorated()
+{
+  local file_filter
+
+  # If no file-filter was provided, set default to "*"
+  if [[ -z "$2" ]] ; then
+    file_filter="*"
+  else
+    file_filter="$2"
+  fi
+
+  # Search
+  grep -F -I -s -R -n --color=always --include="${file_filter}" "$1" ./
+
+} # func_find_follow_undecorated()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: func_find
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Grep for pattern in provided file-list
+#
+#                 Modifies the result lines to be VIM-friendly
+#
+#                 Some separator options (UTF-8 hex-encoded unicode):
+#
+#                      Double Angle :  \xC2\xBB
+#                       Right Arrow :  \xE2\x87\xBE
+#                       Thick Arrow :  \xE2\x87\xA8
+#                      Paired Arrow :  \xE2\x87\x89
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Search string
+#                 $2 = File filter (default is '*')
+# ----------------------------------------------------------------------------
+function func_find()
+{
+  local file_filter
+
+  # If no file-filter was provided, set default to "*"
+  if [[ -z "$2" ]] ; then
+    file_filter="*"
+  else
+    file_filter="$2"
+  fi
+
+  echo -e " - grep -F -I -i -s -r -n --color=always --include=\"${file_filter}\" \"$1\""
+
+  # Search
+  grep -F -I -i -s -r -n --color=always --include="${file_filter}" "$1" ./   \
+       | sed 's/.*/ &/'                                                      \
+       | sed 's/:/ +/'                                                       \
+       | sed 's/:/ \xC2\xBB /'
+
+} # func_find()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: func_find_follow
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Grep for pattern in provided file-list (follow symlinks)
+#
+#                 Modifies the result lines to be VIM-friendly
+#
+#                 Some separator options (UTF-8 hex-encoded unicode):
+#
+#                      Double Angle :  \xC2\xBB
+#                       Right Arrow :  \xE2\x87\xBE
+#                       Thick Arrow :  \xE2\x87\xA8
+#                      Paired Arrow :  \xE2\x87\x89
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Search string
+#                 $2 = File filter (default is '*')
+# ----------------------------------------------------------------------------
+function func_find_follow()
+{
+  local file_filter
+
+  # If no file-filter was provided, set default to "*"
+  if [[ -z "$2" ]] ; then
+    file_filter="*"
+  else
+    file_filter="$2"
+  fi
+
+  echo -e " - grep -F -I -i -s -R -n --color=always --include=\"${file_filter}\" \"$1\""
+
+  # Search
+  grep -F -I -i -s -R -n --color=always --include="${file_filter}" "$1" ./   \
+       | sed 's/.*/ &/'                                                      \
+       | sed 's/:/ +/'                                                       \
+       | sed 's/:/ \xC2\xBB /'
+
+} # func_find_follow()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: func_find_stats
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Grep for pattern in provided file-list, w/ stats
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Search string
+#                 $2 = File filter (default is '*')
+# ----------------------------------------------------------------------------
+function func_find_stats()
+{
+  local time_start
+  local time_stop
+  local time_elapsed
+  local num_matches
+  local file_filter
+
+  # If no file-filter was provided, set default to "*"
+  if [[ -z "$2" ]] ; then
+    file_filter="*"
+  else
+    file_filter="$2"
+  fi
+
+
+  # Show input params
+  echo    ""
+  echo    "Searching.."
+  echo -e " - search string  = \"${TC_YEL}${1}${TC_OFF}\""
+  echo -e " - search files   = \"${TC_YEL}${file_filter}${TC_OFF}\""
+  echo    "---------------------------------------------------------------"
+  echo    ""
+
+  # Perform search
+  time_start=$(date +%s.%2N)
+  num_matches=$( func_find "$1" "${file_filter}" | tee /dev/stderr | wc -l)
+  time_stop=$(date +%s.%2N)
+  time_elapsed=$( echo "scale=2; ${time_stop} - ${time_start}" | bc -l)
+
+  # Show statistics
+  echo    ""
+  echo    "---------------------------------------------------------------"
+  echo    "Search complete!"
+  printf  " - matches found  = ${TC_YEL}%5d${TC_OFF}\n"    ${num_matches}
+  printf  " - elapsed time   = ${TC_YEL}%5.1f${TC_OFF}s\n" ${time_elapsed}
+
+  return ${num_matches}
+
+} # func_find_stats()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: func_find_follow_stats
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Grep for pattern in provided file-list, w/ stats
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Search string
+#                 $2 = File filter (default is '*')
+# ----------------------------------------------------------------------------
+function func_find_follow_stats()
+{
+  local time_start
+  local time_stop
+  local time_elapsed
+  local num_matches
+  local file_filter
+
+  # If no file-filter was provided, set default to "*"
+  if [[ -z "$2" ]] ; then
+    file_filter="*"
+  else
+    file_filter="$2"
+  fi
+
+  # Show input params
+  echo    ""
+  echo    "Searching.."
+  echo -e " - search string  = \"${TC_YEL}${1}${TC_OFF}\""
+  echo -e " - search files   = \"${TC_YEL}${file_filter}${TC_OFF}\""
+  echo    "---------------------------------------------------------------"
+  echo    ""
+
+  # Perform search
+  time_start=$(date +%s.%2N)
+  num_matches=$( func_find_follow "$1" "${file_filter}" | tee /dev/stderr | wc -l)
+  time_stop=$(date +%s.%2N)
+  time_elapsed=$( echo "scale=2; ${time_stop} - ${time_start}" | bc -l)
+
+  # Show statistics
+  echo    ""
+  echo    "---------------------------------------------------------------"
+  echo    "Search complete!"
+  printf  " - matches found  = ${TC_YEL}%5d${TC_OFF}\n"    ${num_matches}
+  printf  " - elapsed time   = ${TC_YEL}%5.1f${TC_OFF}s\n" ${time_elapsed}
+
+  return ${num_matches}
+
+} # func_find_follow_stats()
+
+
+# -- File has been sourced ---------------------------------------------------
+FILE_SOURCED_FUNCTIONS_SEARCH=TRUE
+
+# -- End of File  ------------------------------------------------------------
+# ----------------------------------------------------------------------------

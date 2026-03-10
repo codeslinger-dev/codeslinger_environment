@@ -1,0 +1,825 @@
+# ----------------------------------------------------------------------------
+# -- BASH Functions (Git) ----------------------------------------------------
+#
+# This file defines the Git command functions to be used in a Bash session.
+#
+# This file is intended to be "sourced" by .bashrc (or equivalent):
+#
+#    if [ -f /<path>/.bash_functions_git ]; then
+#     source /<path>/.bash_functions_git
+#    fi
+#
+# ----------------------------------------------------------------------------
+
+
+# -- Fetch this file's directory ---------------------------------------------
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+
+# -- Source Common Functions, if not present ---------------------------------
+if [[ -z $FILE_SOURCED_FUNCTIONS_COMMON ]] ; then
+   if [ -f  ${SCRIPT_DIR}/.bash_functions_common ]; then
+     source ${SCRIPT_DIR}/.bash_functions_common
+   fi
+fi
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: _display_git_command
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Display the provided command
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Text string to display
+# ----------------------------------------------------------------------------
+function _display_git_command()
+{
+    printf "\n"
+    printf " Command: [ ${TC_BLU}%s${TC_OFF} ]..\n" "${1}"
+    printf " ---------------------------------------------------------------\n"
+
+} # _display_git_command
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: _execute_git_command
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Execute (evaluate) the provided command
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Text string to evaluate
+# ----------------------------------------------------------------------------
+function _execute_git_command()
+{
+    printf "\n"
+
+    eval "${1}"
+
+    printf "\n"
+    printf " ---------------------------------------------------------------\n"
+    printf " Command: [ ${TC_BLU}%s${TC_OFF} ].." "${1}"
+    printf " ${TC_GRN}%s${TC_OFF}\n"  "COMPLETED"
+    printf "\n"
+
+} # _execute_git_command
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: _ignore_git_command
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Ignore the provided command
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Text string to display
+# ----------------------------------------------------------------------------
+function _ignore_git_command()
+{
+    printf "\n"
+
+    printf "\n"
+    printf " ---------------------------------------------------------------\n"
+    printf " Command: [ ${TC_BLU}%s${TC_OFF} ].." "${1}"
+    printf " ${TC_RED}%s${TC_OFF}\n"  "CANCELLED"
+    printf "\n"
+
+} # _ignore_git_command
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_status
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show working-area status
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_status()
+{
+    local git_command="git status"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_status
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_status_short
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show working-area status (short output)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_status_short()
+{
+    local git_command="git status --short"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_status_short
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_add
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Stage provided file(s)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = list of files to stage
+# ----------------------------------------------------------------------------
+function fn_git_add()
+{
+    local git_command="git add \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_add
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_add_all
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Stage all files (w/ confirmation)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_add_all()
+{
+    local git_command="git add --all ."
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Stage all files?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_add_all
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_cherry_pick
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Apply a single commit to the current branch
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Commit to apply
+# ----------------------------------------------------------------------------
+function fn_git_cherry_pick()
+{
+    local git_command="git cherry-pick \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Apply the following commit '$@'?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_cherry_pick
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_cherry_pick_append
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Apply a single commit to the current branch, appending
+#                 a line to the commit message ("cherry-picked from ..")
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Commit to apply
+# ----------------------------------------------------------------------------
+function fn_git_cherry_pick_append()
+{
+    local git_command="git cherry-pick -x \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Apply the following commit '$@'?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_cherry_pick_append
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_commit
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Commit staged files
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_commit()
+{
+    local git_command="git commit"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_commit
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_commit_message
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Commmit staged files, with the provided message string
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Commit message
+# ----------------------------------------------------------------------------
+function fn_git_commit_message()
+{
+    local git_command="git commit --message \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Commit with message '$@'?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_commit_message
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_commit_amend_message
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Add any staged files to the previous commit, updating
+#                 the commit message with the provided message string
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Commit message
+# ----------------------------------------------------------------------------
+function fn_git_commit_amend_message()
+{
+    local git_command="git commit --amend --message \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Amend previous commit with message '$@'?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_commit_amend_message
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_branch
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Create a branch with the provided name
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Branch name
+# ----------------------------------------------------------------------------
+function fn_git_branch()
+{
+    local git_command="git branch \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_branch
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_branch_delete
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Delete the provided branch (w/ confirmation)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Branch name
+# ----------------------------------------------------------------------------
+function fn_git_branch_delete()
+{
+    local git_command="git branch --delete \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Delete branch '$@'?" N; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_branch_delete
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_checkout
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Checkout an existing branch
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Branch name
+# ----------------------------------------------------------------------------
+function fn_git_checkout()
+{
+    local git_command="git checkout \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_checkout
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_checkout_branch
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Checkout a new branch (w/ confirmation)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Branch name
+# ----------------------------------------------------------------------------
+function fn_git_checkout_branch()
+{
+    local git_command="git checkout -b \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Create and checkout new branch '$@'?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_checkout_branch
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_diff
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show unstaged differences
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_diff()
+{
+    local git_command="git diff"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_diff
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_diff_summary
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show summary of unstaged differences
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_diff_summary()
+{
+    local git_command="git diff --stat"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_diff_summary
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_diff_all
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show all diffs (unstaged + staged vs HEAD)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_diff_all()
+{
+    local git_command="git diff HEAD"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_diff_all
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_diff_all_summary
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show summary of all diffs (unstaged + staged vs HEAD)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_diff_all_summary()
+{
+    local git_command="git diff HEAD --stat"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_diff_all_summary
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_log
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show the git log
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_log()
+{
+    local git_command="git log"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_log
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_log_graph
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show the git log (w/ graph)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_log_graph()
+{
+    local git_command="git log --graph --oneline --decorate --all"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_log_graph
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_log_graph_detailed
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show the git log (w/ graph +details)
+#
+#                   %h  : Hash (abbreviated)
+#                   %ad : Author date
+#                   %s  : Subject line of commit message
+#                   %d  : Ref names
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_log_graph_detailed()
+{
+    local git_command="git log --graph --pretty=format:\"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s %C(auto)%d%C(reset)\" --date=short --all"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_log_graph_detailed
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_log_oneline
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show the git log (w/ one-line)
+#
+#                   %h  : Hash (abbreviated)
+#                   %ad : Author date
+#                   %s  : Subject line of commit message
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_log_oneline()
+{
+    local git_command="git log --pretty=format:\"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s\" --date=short --all"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_log_oneline
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_log_oneline_detailed
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show the git log (w/ one-line +details)
+#
+#                   %h  : Hash (abbreviated)
+#                   %ad : Author date
+#                   %aN : Author name
+#                   %s  : Subject line of commit message
+#                   %d  : Ref names
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_log_oneline_detailed()
+{
+    local git_command="git log --pretty=format:\"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %C(magenta)%><(22,ltrunc)%aN%C(reset)  %s %C(auto)%d%C(reset)\"  --date=short --all"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_log_oneline_detailed
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_show
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show details of the provided commit id or other object
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Object to show
+# ----------------------------------------------------------------------------
+function fn_git_show()
+{
+    local git_command="git show \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_show
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_show_summary
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Show a summary of the provided commit id or other object
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Object to show
+# ----------------------------------------------------------------------------
+function fn_git_show_summary()
+{
+    local git_command="git show \"$@\" --stat"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_show_summary
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_stash_list
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Stash the current changes
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_stash()
+{
+    local git_command="git stash"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_stash
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_stash_list
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : List the saved stashes
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_stash_list()
+{
+    local git_command="git stash list"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_stash_list
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_stash_save
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Save (push) the requested stash to stack
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Message (optional)
+# ----------------------------------------------------------------------------
+function fn_git_stash_save()
+{
+    local git_command="git stash save \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_stash_save
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_stash_pop
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pop the requested stash from stack
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Stash name (or index)
+# ----------------------------------------------------------------------------
+function fn_git_stash_pop()
+{
+    local git_command="git stash pop \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_stash_pop
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_stash_apply
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Apply the requested stash to the working directory
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Stash name (or index)
+# ----------------------------------------------------------------------------
+function fn_git_stash_apply()
+{
+    local git_command="git stash apply \"$@\""
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_stash_apply
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_stash_drop
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Drop the requested stash (w/ confirmation)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Stash name (or index)
+# ----------------------------------------------------------------------------
+function fn_git_stash_drop()
+{
+    local git_command="git stash drop \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Drop stash '$@'?" N; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_stash_drop
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_push
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Push (to remote repository)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_push()
+{
+    local git_command="git push"
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Push to remote repository?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_push
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_push_branch
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Push current branch (to remote repository)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_push_branch()
+{
+    local git_command="git push -u origin HEAD"
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Push current branch to remote repository?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_push_branch
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_push_branch_by_name
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Push current branch (to remote repository)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $@ = Remote name (or path)
+# ----------------------------------------------------------------------------
+function fn_git_push_branch_by_name()
+{
+    local git_command="git push -u origin \"$@\""
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Push branch '$@' to remote repository?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_push_branch_by_name
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_pull
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pull (from remote repository)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_pull()
+{
+    local git_command="git pull"
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Pull from remote repository?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_pull
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_pull_rebase
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Pull and rebase (from remote repository)
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_pull_rebase()
+{
+    local git_command="git pull --rebase"
+
+    _display_git_command "${git_command}"
+
+    printf "\n"
+    if confirm_choice " Git: Pull (+rebase) from remote repository?" Y; then
+        printf "\n"
+        _execute_git_command "${git_command}"
+    else
+        _ignore_git_command  "${git_command}"
+    fi
+
+} # fn_git_pull_rebase
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_merge
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Perform merge, without fast-forward
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_merge()
+{
+    local git_command="git merge --no-ff --progress"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_merge
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_merge_ff
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Perform merge, only if fast-forward is available
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function fn_git_merge_ff()
+{
+    local git_command="git merge --ff-only"
+
+    _display_git_command "${git_command}"
+    _execute_git_command "${git_command}"
+
+} # fn_git_merge_ff
+
+
+# -- File has been sourced ---------------------------------------------------
+FILE_SOURCED_FUNCTIONS_GIT=TRUE
+
+# -- End of File  ------------------------------------------------------------
+# ----------------------------------------------------------------------------

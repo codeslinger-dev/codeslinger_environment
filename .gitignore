@@ -1,0 +1,27 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.vscode/
+
+# Shell / runtime artifacts
+*.log
+*.tmp
+*.bak
+
+# Python cache (if tooling scripts are added)
+__pycache__/
+*.pyc
+
+# Vim runtime artifacts
+.netrwhist
+*.un~
+
+# Local environment folders
+.venv/
+venv/
+
+# Repository-local backup output if ever created here
+DOTFILE_BACKUPS/

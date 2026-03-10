@@ -1,0 +1,39 @@
+# ----------------------------------------------------------------------------
+# Store selected contents of this file in:
+#    ~/.gitconfig
+# ----------------------------------------------------------------------------
+
+[user]
+	email = <your.email>
+	name = <your name>
+
+[init]
+	defaultBranch = main
+
+[core]
+	pager = less
+
+[color]
+	pager = yes
+	ui = auto
+
+[merge]
+    tool = vimdiff3
+    conflictstyle = diff3
+    prompt = true
+
+[mergetool "vimdiff3"]
+    cmd = vim -f -d -c \"wincmd J\" \"$MERGED\" \"$LOCAL\" \"$BASE\" \"$REMOTE\"
+
+[difftool "vim"]
+    cmd = vim \"$MERGED\"
+    prompt = false
+
+[mergetool "vscode"]
+    cmd = code --wait $MERGED
+
+[difftool "vscode"]
+    cmd = code --wait --diff $LOCAL $REMOTE
+
+
+# end of file

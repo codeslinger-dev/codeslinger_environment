@@ -1,0 +1,378 @@
+# ----------------------------------------------------------------------------
+# -- BASH Aliases (Git) ------------------------------------------------------
+#
+# This file defines the Git command aliases to be used in a Bash session.
+#
+# This file is intended to be "sourced" by .bashrc (or equivalent):
+#
+#    if [ -f /<path>/.bash_aliases_git ]; then
+#     source /<path>/.bash_aliases_git
+#    fi
+#
+# ----------------------------------------------------------------------------
+
+
+# -- Utilities ---------------------------------------------------------------
+#
+
+# -- Enable programmable git completion features -----------------------------
+if ! shopt -oq posix; then
+  if   [ -f /etc/bash_completion.d/git ]; then
+    source  /etc/bash_completion.d/git
+  elif [ -f /usr/share/bash-completion/completions/git ]; then
+    source  /usr/share/bash-completion/completions/git
+  fi
+fi
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: fn_git_completion_register_alias
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Register the provided alias with the provided git
+#                 completion function.
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = Alias
+#                 $2 = Git completion function
+# ----------------------------------------------------------------------------
+function fn_git_completion_register_alias()
+{
+   if [[ $# -eq 2 ]] ; then
+
+     local register_func="__git_complete"
+     local completion_func="$2"
+
+     # Check that the register function is valid
+     if type -t "${register_func}" >/dev/null 2>&1 ; then
+       # Check that the completion function is valid
+       if type -t "${completion_func}" >/dev/null 2>&1 ; then
+         # Register provided alias
+         "${register_func}"  "$1" "${completion_func}"
+#       else
+#         log_warn "Completion Function - Not Valid:  ${completion_func}"
+       fi
+#     else
+#       log_info "Register Function - Not Valid:  ${register_func}"
+     fi
+
+   fi
+
+} # fn_git_completion_register_alias
+
+
+# Git:  Show current branch name
+alias git-show-branch-name='git rev-parse --symbolic-full-name --abbrev-ref HEAD'
+alias                 gsbn='git rev-parse --symbolic-full-name --abbrev-ref HEAD'
+
+
+# -- STATUS ------------------------------------------------------------------
+#
+
+# Git:  Status
+alias        git-status='fn_git_status'
+alias                gs='fn_git_status'
+
+fn_git_completion_register_alias  git-status  _git_status
+fn_git_completion_register_alias          gs  _git_status
+
+# Git:  Status (short)
+alias  git-status-short='fn_git_status_short'
+alias               gss='fn_git_status_short'
+
+fn_git_completion_register_alias  git-status-short  _git_status
+fn_git_completion_register_alias               gss  _git_status
+
+
+# -- ADD ---------------------------------------------------------------------
+#
+
+# Git:  Add
+alias      git-add='fn_git_add'
+alias           ga='fn_git_add'
+
+fn_git_completion_register_alias  git-add  _git_add
+fn_git_completion_register_alias       ga  _git_add
+
+# Git:  Add all (w/ confirmation)
+alias  git-add-all='fn_git_add_all'
+alias          gaa='fn_git_add_all'
+
+fn_git_completion_register_alias  git-add-all  _git_add
+fn_git_completion_register_alias          gaa  _git_add
+
+
+# -- CHERRY PICK -------------------------------------------------------------
+#
+
+# Git:  Cherry-pick
+alias         git-cherry-pick='fn_git_cherry_pick'
+alias                     gcp='fn_git_cherry_pick'
+
+fn_git_completion_register_alias  git-cherry-pick  _git_cherry_pick
+fn_git_completion_register_alias              gcp  _git_cherry_pick
+
+
+# Git:  Cherry-pick (w/ commit message append)
+alias  git-cherry-pick-append='fn_git_cherry_pick_append'
+alias                    gcpa='fn_git_cherry_pick_append'
+
+fn_git_completion_register_alias  git-cherry-pick-append  _git_cherry_pick
+fn_git_completion_register_alias                    gcpa  _git_cherry_pick
+
+
+# -- COMMIT ------------------------------------------------------------------
+#
+
+# Git:  Commit
+alias                git-commit='fn_git_commit'
+alias                        gc='fn_git_commit'
+
+fn_git_completion_register_alias  git-commit  _git_commit
+fn_git_completion_register_alias          gc  _git_commit
+
+alias        git-commit-message='fn_git_commit_message'
+alias                       gcm='fn_git_commit_message'
+
+fn_git_completion_register_alias  git-commit-message  _git_commit
+fn_git_completion_register_alias                 gcm  _git_commit
+
+alias  git-commit-amend-message='fn_git_commit_amend_message'
+alias                      gcam='fn_git_commit_amend_message'
+
+fn_git_completion_register_alias  git-commit-amend-message  _git_commit
+fn_git_completion_register_alias                      gcam  _git_commit
+
+
+# -- BRANCH ------------------------------------------------------------------
+#
+
+# Git:  Branch
+alias         git-branch='fn_git_branch'
+alias                 gb='fn_git_branch'
+
+fn_git_completion_register_alias  git-branch  _git_branch
+fn_git_completion_register_alias          gb  _git_branch
+
+# Git:  Branch Delete
+alias  git-branch-delete='fn_git_branch_delete'
+alias                gbd='fn_git_branch_delete'
+
+fn_git_completion_register_alias  git-branch-delete  _git_branch
+fn_git_completion_register_alias                gbd  _git_branch
+
+
+# -- CHECKOUT ----------------------------------------------------------------
+#
+
+# Git:  Checkout existing branch
+alias         git-checkout='fn_git_checkout'
+alias                  gco='fn_git_checkout'
+
+fn_git_completion_register_alias  git-checkout  _git_checkout
+fn_git_completion_register_alias           gco  _git_checkout
+
+# Git:  Checkout new branch (w/ confirmation)
+alias  git-checkout-branch='fn_git_checkout_branch'
+alias                 gcob='fn_git_checkout_branch'
+
+fn_git_completion_register_alias  git-checkout-branch  _git_checkout
+fn_git_completion_register_alias                 gcob  _git_checkout
+
+
+# -- DIFF --------------------------------------------------------------------
+#
+
+# Git:  Diff (working directory vs staged)
+alias              git-diff='fn_git_diff'
+alias                    gd='fn_git_diff'
+
+fn_git_completion_register_alias  git-diff  _git_diff
+fn_git_completion_register_alias        gd  _git_diff
+
+# Git:  Diff summary (working directory vs staged)
+alias      git-diff-summary='fn_git_diff_summary'
+alias                   gds='fn_git_diff_summary'
+
+fn_git_completion_register_alias  git-diff-summary  _git_diff
+fn_git_completion_register_alias               gds  _git_diff
+
+# Git:  Diff All (working directory vs HEAD)
+alias          git-diff-all='fn_git_diff_all'
+alias                   gda='fn_git_diff_all'
+
+fn_git_completion_register_alias  git-diff-all  _git_diff
+fn_git_completion_register_alias           gda  _git_diff
+
+# Git:  Diff All Summary (working directory vs HEAD)
+alias  git-diff-all-summary='fn_git_diff_all_summary'
+alias                  gdas='fn_git_diff_all_summary'
+
+fn_git_completion_register_alias  git-diff-all-summary  _git_diff
+fn_git_completion_register_alias                  gdas  _git_diff
+
+
+# -- LOG ---------------------------------------------------------------------
+#
+
+# Git:  Log
+alias                  git-log='fn_git_log'
+alias                       gl='fn_git_log'
+
+fn_git_completion_register_alias  git-log  _git_log
+fn_git_completion_register_alias       gl  _git_log
+
+# Git:  Log w/ graph
+alias            git-log-graph='fn_git_log_graph'
+alias                      glg='fn_git_log_graph'
+alias                   git-lg='fn_git_log_graph'
+
+fn_git_completion_register_alias  git-log-graph  _git_log
+fn_git_completion_register_alias            glg  _git_log
+fn_git_completion_register_alias         git-lg  _git_log
+
+# Git:  Log w/ graph (+detail)
+alias   git-log-graph-detailed='fn_git_log_graph_detailed'
+alias                     glgd='fn_git_log_graph_detailed'
+alias                  git-llg='fn_git_log_graph_detailed'
+alias                  git-lgd='fn_git_log_graph_detailed'
+
+fn_git_completion_register_alias  git-log-graph-detailed  _git_log
+fn_git_completion_register_alias                    glgd  _git_log
+fn_git_completion_register_alias                 git-llg  _git_log
+fn_git_completion_register_alias                 git-lgd  _git_log
+
+# Git:  Log w/ one-line
+alias          git-log-oneline='fn_git_log_oneline'
+alias          git-log-compact='fn_git_log_oneline'
+alias                      glc='fn_git_log_oneline'
+alias                   git-ll='fn_git_log_oneline'
+
+fn_git_completion_register_alias  git-log-oneline  _git_log
+fn_git_completion_register_alias  git-log-compact  _git_log
+fn_git_completion_register_alias              glc  _git_log
+fn_git_completion_register_alias           git-ll  _git_log
+
+# Git:  Log w/ one-line (+detail)
+alias git-log-oneline-detailed='fn_git_log_oneline_detailed'
+alias git-log-compact-detailed='fn_git_log_oneline_detailed'
+alias                     glcd='fn_git_log_oneline_detailed'
+alias                  git-lld='fn_git_log_oneline_detailed'
+
+fn_git_completion_register_alias  git-log-oneline-detailed  _git_log
+fn_git_completion_register_alias  git-log-compact-detailed  _git_log
+fn_git_completion_register_alias                      glcd  _git_log
+fn_git_completion_register_alias                   git-lld  _git_log
+
+
+# -- SHOW --------------------------------------------------------------------
+#
+
+# Git:  Show (commit details)
+alias         git-show='fn_git_show'
+alias              gsh='fn_git_show'
+
+fn_git_completion_register_alias  git-show  _git_show
+fn_git_completion_register_alias       gsh  _git_show
+
+# Git:  Show (commit summary)
+alias git-show-summary='fn_git_show_summary'
+alias             gshs='fn_git_show_summary'
+
+fn_git_completion_register_alias  git-show-summary  _git_show
+fn_git_completion_register_alias              gshs  _git_show
+
+
+# -- STASH -------------------------------------------------------------------
+#
+
+# Git:  Stash
+alias       git-stash='fn_git_stash'
+alias             gst='fn_git_stash'
+
+fn_git_completion_register_alias  git-stash  _git_stash
+fn_git_completion_register_alias        gst  _git_stash
+
+# Git:  Stash List
+alias  git-stash-list='fn_git_stash_list'
+alias            gstl='fn_git_stash_list'
+
+# Git:  Save requested stash (aka: push to stash stack)
+alias  git-stash-save='fn_git_stash_save'
+alias            gsts='fn_git_stash_save'
+
+# Git:  Pop requested stash (aka: pop from  stash stack)
+alias   git-stash-pop='fn_git_stash_pop'
+alias            gstp='fn_git_stash_pop'
+
+# Git:  Apply requested stash to working directory
+alias git-stash-apply='fn_git_stash_apply'
+alias            gsta='fn_git_stash_apply'
+
+# Git:  Drop requested stash (w/ confirmation)
+alias  git-stash-drop='fn_git_stash_drop'
+alias            gstd='fn_git_stash_drop'
+
+
+# -- PULL --------------------------------------------------------------------
+#
+
+# Git:  Pull
+alias        git-pull='fn_git_pull'
+alias              gp='fn_git_pull'
+
+fn_git_completion_register_alias  git-pull _git_pull
+fn_git_completion_register_alias       gp  _git_pull
+
+# Git:  Pull (w/ rebase)
+alias git-pull-rebase='fn_git_pull_rebase'
+alias             gpr='fn_git_pull_rebase'
+
+fn_git_completion_register_alias  git-pull-rebase  _git_pull
+fn_git_completion_register_alias              gpr  _git_pull
+
+
+# -- PUSH --------------------------------------------------------------------
+#
+
+# Git:  Push
+alias                git-push='fn_git_push'
+alias                   gpush='fn_git_push'
+
+fn_git_completion_register_alias  git-push  _git_push
+fn_git_completion_register_alias     gpush  _git_push
+
+# Git:  Push branch (current)
+alias         git-push-branch='fn_git_push_branch'
+alias                  gpushb='fn_git_push_branch'
+
+fn_git_completion_register_alias   git-push-branch  _git_push
+fn_git_completion_register_alias            gpushb  _git_push
+
+# Git:  Push branch (by name)
+alias git-push-branch-by-name='fn_git_push_branch_by_name'
+alias                 gpushbn='fn_git_push_branch_by_name'
+
+fn_git_completion_register_alias  git-push-branch-by-name  _git_branch
+fn_git_completion_register_alias                  gpushbn  _git_branch
+
+
+
+# -- MERGE -------------------------------------------------------------------
+#
+
+# Git:  Merge (no fast-forward)
+alias     git-merge='fn_git_merge'
+alias            gm='fn_git_merge'
+
+fn_git_completion_register_alias  git-merge  _git_merge
+fn_git_completion_register_alias         gm  _git_merge
+
+# Git:  Merge (only fast-forward)
+alias  git-merge-ff='fn_git_merge_ff'
+alias          gmff='fn_git_merge_ff'
+
+fn_git_completion_register_alias  git-merge-ff  _git_merge
+fn_git_completion_register_alias          gmff  _git_merge
+
+
+# -- End of File  ------------------------------------------------------------
+# ----------------------------------------------------------------------------

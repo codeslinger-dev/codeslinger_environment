@@ -1,0 +1,223 @@
+# ----------------------------------------------------------------------------
+# -- BASH Prompt -------------------------------------------------------------
+#
+# This file defines the prompt to be used in a Bash session.
+#
+# ----------------------------------------------------------------------------
+
+
+# -- Fetch this file's directory ---------------------------------------------
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+
+# -- Source Common Functions, if not present ---------------------------------
+if [[ -z $FILE_SOURCED_FUNCTIONS_COMMON ]] ; then
+   if [ -f  ${SCRIPT_DIR}/.bash_functions_common ]; then
+     source ${SCRIPT_DIR}/.bash_functions_common
+   fi
+fi
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: font
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Sets text formatting options for terminal display
+#
+#                 When called with no parameters, resets the formatting
+#                 back to the default
+#
+#                 When called with multiple parameters, the text color
+#                 is always the last supplied
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : Supplying 2 parameters:
+#                   $1 = Foreground/Background
+#                   $2 = Text color
+#
+#                 Supplying 3 parameters:
+#                   $1 = Foreground/Background
+#                   $2 = Control
+#                   $3 = Text color
+# ----------------------------------------------------------------------------
+function font()
+{
+    local esc="\033"
+    local formatted="\[${esc}[0m\]"
+    case $# in
+        2)
+            formatted="\[${esc}[${1};5;${2}m\]"
+        ;;
+        3)
+            formatted="\[${esc}[${2};${1};5;${3}m\]"
+        ;;
+        4)
+            formatted="\[${esc}[${2};${3};${1};5;${4}m\]"
+        ;;
+        5)
+            formatted="\[${esc}[${2};${3};${4};${1};5;${5}m\]"
+        ;;
+        6)
+            formatted="\[${esc}[${2};${3};${4};${5};${1};5;${6}m\]"
+        ;;
+    esac
+    echo ${formatted}
+
+} # font()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: set_prompt
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Configures the prompt (use to populate PROMPT_COMMAND)
+#
+#                 Invoked after every command, this function is used to
+#                 perform any system checks and use those results to
+#                 populate the PS<N> prompt strings
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function set_prompt()
+{
+    # Save exit status of last command (needs to be first)
+    local last_cmd_exit_status="$?"
+
+    # Background & Foreground
+    local bg="48"
+    local fg="38"
+
+    # Colors
+    local black="16"
+    local blue="27"
+    local cyan="51"
+    local green="46"
+    local magenta="95"
+    local orange="202"
+    local purple="201"
+    local red="196"
+    local white="15"
+    local yellow="11"
+
+    # Controls
+    local blink_off="25"
+    local blink_on="5"
+    local bold="1"
+    local dim="2"
+    local inverse_off="27"
+    local inverse_on="7"
+    local normal="22"
+    local reset="0"
+    local transparent="8"
+    local underline_off="24"
+    local underline_on="4"
+
+    # Built-ins
+    local cwd="\W"
+    local date="\d"
+    local host="\h"
+    local pwd="\w"
+    local shell="\s"
+    local time="\@"
+    local time_hms="\D{%I:%M:%S %p}"
+    local user="\u"
+
+    # Count number of files in the current directory
+    local files=$(ls -A | wc -l | tr -d '[:space:]')
+
+
+    # Fetch total size of current directory
+    #  - unsupported on SunOS
+    if [[ `uname -s` == "SunOS" ]]; then
+      local total_size=""
+    else
+      local total_size=$(ls -lah | grep -m 1 total | sed 's/total //')
+    fi
+
+    # Format CWD (change color of path separators)
+    local unformatted_cwd=$(dirs +0)
+    local formatted_cwd="${TC_GRN}"
+    local formatted_cwd+=${unformatted_cwd//'/'/${TC_MAG}'/'${TC_GRN}}
+    local formatted_cwd+=${TC_MAG}'/'
+    local formatted_cwd+=${TC_OFF}
+
+
+    # Fetch git information
+    local git_info=$(__git_ps1)
+    if [[ ${git_info} ]]; then
+       git_info=" |$(font ${fg} ${yellow})${git_info}$(font)"
+    fi
+
+    # Check exit status of previously-executed command
+    if [[ $last_cmd_exit_status == 0 ]]; then
+        local exit_status_color=${yellow}
+    else
+        local exit_status_color=${red}
+    fi
+
+
+    # PS0: Displayed after each command, but before any output
+    #       - set to empty string
+    PS0=''
+
+
+    # PS1: Primary prompt displayed before each command
+    #       - multi-line prompt with path & git info
+    PS1="\n[$(font ${fg} ${yellow})${user}$(font) @ $(font ${fg} ${yellow})${host}$(font)]"
+    PS1+="  [$(font ${fg} ${cyan})${cwd}$(font) | ${files} files, ${total_size}]"
+    PS1+="  [${formatted_cwd}${git_info}]"
+    PS1+="\n[$(font)${date} ${time}$(font)]"
+    PS1+="$(font ${fg} ${exit_status_color})"
+    PS1+=$' \xC2\xBB '
+    PS1+="$(font)"
+
+#    PS1="\n\[\e(0\]lqq\[\e(B\][$(font ${fg} ${yellow})${user}$(font) @ $(font ${fg} ${yellow})${host}$(font)]"
+#    PS1+="  [$(font ${fg} ${cyan})${cwd}$(font) ${files} files, ${total_size}]"
+#    PS1+="  [${formatted_cwd}${git_info}]"
+#    PS1+="\n\[\e(0\]mq\[\e(B\][$(font ${fg} ${orange})${date} ${time}$(font)]"
+#    PS1+="$(font ${fg} ${exit_status_color})"
+#    PS1+=$' \xC2\xBB '
+#    PS1+="$(font)"
+
+
+    # If xterm, inject a 'set window title' command in the prompt
+    #
+    #  - Note:  Using the PS1 prompt to update the xterm title is
+    #           useful for dynamic information changes (such as
+    #           current directory or timestamps)
+    #
+    #           Xterm Title Esc Sequence Begin:  \033]0;
+    #           Xterm Title Esc Sequence   End:  \007
+    #
+    #             - The '[' and ']' characters indicate to
+    #               Bash to ignore everything in between
+    #
+    case "$TERM" in
+    xterm*|rxvt*)
+        # Title:  'xterm | <user> @ <host> | <cwd>'
+        PS1="\[ \033]0;xterm  |  \u @ \h  |  \w\007 \]${PS1}"
+        ;;
+    *)
+        ;;
+    esac
+
+
+    # PS2: Secondary prompt displayed when a command needs more input
+    #       - default to "[date time] >> "
+    PS2="[$(font)${date} ${time}$(font)]"
+    PS2+="$(font ${fg} ${exit_status_color})"
+    PS2+=$' \xC2\xBB '
+    PS2+="$(font)"
+
+} # set_prompt()
+
+
+# Git-prompt controls
+GIT_PS1_SHOWUPSTREAM="git"     # '<' behind, '>' ahead, '<>' diverged, '=' no difference
+GIT_PS1_SHOWDIRTYSTATE=1       # staged '+', unstaged '*'
+GIT_PS1_SHOWSTASHSTATE=0       # '$' something is stashed
+GIT_PS1_SHOWUNTRACKEDFILES=0   # '%' untracked files
+
+PROMPT_COMMAND=set_prompt
+
+
+
+# -- End of File  ------------------------------------------------------------
+# ----------------------------------------------------------------------------
