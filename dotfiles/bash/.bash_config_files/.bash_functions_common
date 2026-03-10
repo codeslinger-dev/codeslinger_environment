@@ -200,7 +200,8 @@ function colorize_8bit()
 # ----------------------------------------------------------------------------
 function colorize_gradient()
 {
-    local width=$(tput cols)
+    local width
+    width=$(tput cols)
 
     # Generate dynamic palette based on terminal width
     local -a palette_colors=()
@@ -385,7 +386,8 @@ function colorize_gradient()
 # ----------------------------------------------------------------------------
 function colorize_gradient_24bit()
 {
-    local width=$(tput cols)
+    local width
+    width=$(tput cols)
     
     # Generate dynamic 24-bit RGB palette based on terminal width
     # Uses 0-1530 range for smooth 6-segment rainbow (R→Y→G→C→B→M)
@@ -982,7 +984,8 @@ function print_ansi_colors()
 # ----------------------------------------------------------------------------
 function log_get_current_timestamp()
 {
-    local time_now=$(date +"%Y-%m-%d %H:%M:%S")
+    local time_now
+    time_now=$(date +"%Y-%m-%d %H:%M:%S")
     echo "${time_now}"
 }
 
@@ -1003,7 +1006,8 @@ function log_get_current_timestamp()
 function log_error()
 {
     if [[ -z $DISABLE_LOG_LEVEL_ERROR ]]; then
-      local time_now=$(log_get_current_timestamp)
+      local time_now
+      time_now=$(log_get_current_timestamp)
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_RED}ERROR${TC_OFF}] ${1}" >&2
     fi
 } # log_error()
@@ -1011,7 +1015,8 @@ function log_error()
 function log_warn()
 {
     if [[ -z $DISABLE_LOG_LEVEL_WARN ]]; then
-      local time_now=$(log_get_current_timestamp)
+      local time_now
+      time_now=$(log_get_current_timestamp)
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_YEL} WARN${TC_OFF}] ${1}" >&2
     fi
 } # log_warn()
@@ -1019,7 +1024,8 @@ function log_warn()
 function log_info()
 {
     if [[ -z $DISABLE_LOG_LEVEL_INFO ]]; then
-      local time_now=$(log_get_current_timestamp)
+      local time_now
+      time_now=$(log_get_current_timestamp)
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_MAG} INFO${TC_OFF}] ${1}" >&2
     fi
 } # log_info()
@@ -1027,14 +1033,16 @@ function log_info()
 function log_debug()
 {
     if [[ -z $DISABLE_LOG_LEVEL_DEBUG ]]; then
-      local time_now=$(log_get_current_timestamp)
+      local time_now
+      time_now=$(log_get_current_timestamp)
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_GRN}DEBUG${TC_OFF}] ${1}" >&2
     fi
 } # log_debug()
 
 function log_na()
 {
-    local time_now=$(log_get_current_timestamp)
+    local time_now
+    time_now=$(log_get_current_timestamp)
     echo -e "${TC_DRK}${time_now}${TC_OFF} [ --- ] ${1}" >&2
 } # log_na()
 

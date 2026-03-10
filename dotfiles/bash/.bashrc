@@ -193,7 +193,8 @@ fi
 
 # Timestamp (current)
 if [[ -z $TIME_AT_LOGIN ]] ; then
-  export TIME_AT_LOGIN=`date '+%F %r'`
+  TIME_AT_LOGIN=$(date '+%F %r')
+  export TIME_AT_LOGIN
 fi
 
 # -- End of File  ------------------------------------------------------------

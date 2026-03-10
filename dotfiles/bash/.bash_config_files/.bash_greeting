@@ -189,7 +189,8 @@ function display_num_cpu_cores()
 # ----------------------------------------------------------------------------
 function display_num_cpu_hwthreads()
 {
-  local num_cores=$(display_num_cpu_cores)
+  local num_cores
+  num_cores=$(display_num_cpu_cores)
   local threads_per_core=1
 
   # Check for 'lscpu' command
@@ -381,19 +382,32 @@ function display_mem_free()
 function display_greeting()
 {
   # Fetch system information
-  local sys_user=$( echo "$USER" )
-  local sys_host=$(hostname)
-  local sys_kernel_name=$(uname -s)
-  local sys_kernel_rel=$(uname -r)
-  local sys_kernel_arch=$(uname -m)
-  local sys_cpu=$(display_processor_name)
-  local sys_cpu_cores=$(display_num_cpu_cores)
-  local sys_cpu_threads=$(display_num_cpu_hwthreads)
-  local sys_homedir_size=$(display_home_size_total)
-  local sys_homedir_free=$(display_home_size_free)
-  local sys_mem_size=$(display_mem_total)
-  local sys_mem_free=$(display_mem_free)
-  local sys_uptime=$(display_system_uptime)
+  local sys_user
+  sys_user=$( echo "$USER" )
+  local sys_host
+  sys_host=$(hostname)
+  local sys_kernel_name
+  sys_kernel_name=$(uname -s)
+  local sys_kernel_rel
+  sys_kernel_rel=$(uname -r)
+  local sys_kernel_arch
+  sys_kernel_arch=$(uname -m)
+  local sys_cpu
+  sys_cpu=$(display_processor_name)
+  local sys_cpu_cores
+  sys_cpu_cores=$(display_num_cpu_cores)
+  local sys_cpu_threads
+  sys_cpu_threads=$(display_num_cpu_hwthreads)
+  local sys_homedir_size
+  sys_homedir_size=$(display_home_size_total)
+  local sys_homedir_free
+  sys_homedir_free=$(display_home_size_free)
+  local sys_mem_size
+  sys_mem_size=$(display_mem_total)
+  local sys_mem_free
+  sys_mem_free=$(display_mem_free)
+  local sys_uptime
+  sys_uptime=$(display_system_uptime)
 
 
   # Display Greeting
