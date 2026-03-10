@@ -120,7 +120,7 @@ mkdir -p  "${backup_folder_name}" >& /dev/null
 #
 if [[ ! -d "${backup_folder_name}" ]]; then
   echo -e "    ${col_red}ERROR${col_off}: Could not create backup folder! [${col_red}fatal${col_off}]"
-  exit -1
+  exit 1
 fi
 echo ""
 

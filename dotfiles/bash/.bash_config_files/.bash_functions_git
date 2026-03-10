@@ -43,20 +43,23 @@ function _display_git_command()
 # ----------------------------------------------------------------------------
 #  FUNCTION NAME: _execute_git_command
 # ----------------------------------------------------------------------------
-#  DESCRIPTION  : Execute (evaluate) the provided command
+#  DESCRIPTION  : Execute the provided command (passed as arguments)
 # ----------------------------------------------------------------------------
-#  PARAMETERS   : $1 = Text string to evaluate
+#  PARAMETERS   : $1  = Display string for the command
+#                 $2+ = Command and arguments to execute
 # ----------------------------------------------------------------------------
 function _execute_git_command()
 {
+    local display_cmd="$1"
+    shift
+
     printf "\n"
 
-    eval "${1}"
+    "$@"
 
     printf "\n"
     printf " ---------------------------------------------------------------\n"
-    printf " Command: [ ${TC_BLU}%s${TC_OFF} ].." "${1}"
-    printf " ${TC_GRN}%s${TC_OFF}\n"  "COMPLETED"
+    printf " Command: [ ${TC_BLU}%s${TC_OFF} ].. ${TC_GRN}%s${TC_OFF}\n" "${display_cmd}" "COMPLETED"
     printf "\n"
 
 } # _execute_git_command
@@ -65,18 +68,17 @@ function _execute_git_command()
 # ----------------------------------------------------------------------------
 #  FUNCTION NAME: _ignore_git_command
 # ----------------------------------------------------------------------------
-#  DESCRIPTION  : Ignore the provided command
+#  DESCRIPTION  : Display a cancelled command message
 # ----------------------------------------------------------------------------
-#  PARAMETERS   : $1 = Text string to display
+#  PARAMETERS   : $1 = Display string for the command
 # ----------------------------------------------------------------------------
 function _ignore_git_command()
 {
-    printf "\n"
+    local display_cmd="$1"
 
     printf "\n"
     printf " ---------------------------------------------------------------\n"
-    printf " Command: [ ${TC_BLU}%s${TC_OFF} ].." "${1}"
-    printf " ${TC_RED}%s${TC_OFF}\n"  "CANCELLED"
+    printf " Command: [ ${TC_BLU}%s${TC_OFF} ].. ${TC_RED}%s${TC_OFF}\n" "${display_cmd}" "CANCELLED"
     printf "\n"
 
 } # _ignore_git_command
@@ -91,10 +93,10 @@ function _ignore_git_command()
 # ----------------------------------------------------------------------------
 function fn_git_status()
 {
-    local git_command="git status"
+    local git_command_display="git status"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git status
 
 } # fn_git_status
 
@@ -108,10 +110,10 @@ function fn_git_status()
 # ----------------------------------------------------------------------------
 function fn_git_status_short()
 {
-    local git_command="git status --short"
+    local git_command_display="git status --short"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git status --short
 
 } # fn_git_status_short
 
@@ -125,10 +127,10 @@ function fn_git_status_short()
 # ----------------------------------------------------------------------------
 function fn_git_add()
 {
-    local git_command="git add \"$@\""
+    local git_command_display="git add $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git add "$@"
 
 } # fn_git_add
 
@@ -141,16 +143,16 @@ function fn_git_add()
 # ----------------------------------------------------------------------------
 function fn_git_add_all()
 {
-    local git_command="git add --all ."
+    local git_command_display="git add --all ."
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Stage all files?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git add --all .
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_add_all
@@ -165,16 +167,16 @@ function fn_git_add_all()
 # ----------------------------------------------------------------------------
 function fn_git_cherry_pick()
 {
-    local git_command="git cherry-pick \"$@\""
+    local git_command_display="git cherry-pick $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Apply the following commit '$@'?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git cherry-pick "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_cherry_pick
@@ -190,16 +192,16 @@ function fn_git_cherry_pick()
 # ----------------------------------------------------------------------------
 function fn_git_cherry_pick_append()
 {
-    local git_command="git cherry-pick -x \"$@\""
+    local git_command_display="git cherry-pick -x $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Apply the following commit '$@'?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git cherry-pick -x "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_cherry_pick_append
@@ -214,10 +216,10 @@ function fn_git_cherry_pick_append()
 # ----------------------------------------------------------------------------
 function fn_git_commit()
 {
-    local git_command="git commit"
+    local git_command_display="git commit"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git commit
 
 } # fn_git_commit
 
@@ -231,16 +233,16 @@ function fn_git_commit()
 # ----------------------------------------------------------------------------
 function fn_git_commit_message()
 {
-    local git_command="git commit --message \"$@\""
+    local git_command_display="git commit --message $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Commit with message '$@'?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git commit --message "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_commit_message
@@ -256,16 +258,16 @@ function fn_git_commit_message()
 # ----------------------------------------------------------------------------
 function fn_git_commit_amend_message()
 {
-    local git_command="git commit --amend --message \"$@\""
+    local git_command_display="git commit --amend --message $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Amend previous commit with message '$@'?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git commit --amend --message "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_commit_amend_message
@@ -280,10 +282,10 @@ function fn_git_commit_amend_message()
 # ----------------------------------------------------------------------------
 function fn_git_branch()
 {
-    local git_command="git branch \"$@\""
+    local git_command_display="git branch $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git branch "$@"
 
 } # fn_git_branch
 
@@ -297,16 +299,16 @@ function fn_git_branch()
 # ----------------------------------------------------------------------------
 function fn_git_branch_delete()
 {
-    local git_command="git branch --delete \"$@\""
+    local git_command_display="git branch --delete $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Delete branch '$@'?" N; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git branch --delete "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_branch_delete
@@ -321,10 +323,10 @@ function fn_git_branch_delete()
 # ----------------------------------------------------------------------------
 function fn_git_checkout()
 {
-    local git_command="git checkout \"$@\""
+    local git_command_display="git checkout $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git checkout "$@"
 
 } # fn_git_checkout
 
@@ -338,16 +340,16 @@ function fn_git_checkout()
 # ----------------------------------------------------------------------------
 function fn_git_checkout_branch()
 {
-    local git_command="git checkout -b \"$@\""
+    local git_command_display="git checkout -b $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Create and checkout new branch '$@'?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git checkout -b "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_checkout_branch
@@ -362,10 +364,10 @@ function fn_git_checkout_branch()
 # ----------------------------------------------------------------------------
 function fn_git_diff()
 {
-    local git_command="git diff"
+    local git_command_display="git diff"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git diff
 
 } # fn_git_diff
 
@@ -379,10 +381,10 @@ function fn_git_diff()
 # ----------------------------------------------------------------------------
 function fn_git_diff_summary()
 {
-    local git_command="git diff --stat"
+    local git_command_display="git diff --stat"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git diff --stat
 
 } # fn_git_diff_summary
 
@@ -396,10 +398,10 @@ function fn_git_diff_summary()
 # ----------------------------------------------------------------------------
 function fn_git_diff_all()
 {
-    local git_command="git diff HEAD"
+    local git_command_display="git diff HEAD"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git diff HEAD
 
 } # fn_git_diff_all
 
@@ -413,10 +415,10 @@ function fn_git_diff_all()
 # ----------------------------------------------------------------------------
 function fn_git_diff_all_summary()
 {
-    local git_command="git diff HEAD --stat"
+    local git_command_display="git diff HEAD --stat"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git diff HEAD --stat
 
 } # fn_git_diff_all_summary
 
@@ -430,10 +432,10 @@ function fn_git_diff_all_summary()
 # ----------------------------------------------------------------------------
 function fn_git_log()
 {
-    local git_command="git log"
+    local git_command_display="git log"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git log
 
 } # fn_git_log
 
@@ -447,10 +449,10 @@ function fn_git_log()
 # ----------------------------------------------------------------------------
 function fn_git_log_graph()
 {
-    local git_command="git log --graph --oneline --decorate --all"
+    local git_command_display="git log --graph --oneline --decorate --all"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git log --graph --oneline --decorate --all
 
 } # fn_git_log_graph
 
@@ -469,10 +471,10 @@ function fn_git_log_graph()
 # ----------------------------------------------------------------------------
 function fn_git_log_graph_detailed()
 {
-    local git_command="git log --graph --pretty=format:\"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s %C(auto)%d%C(reset)\" --date=short --all"
+    local git_command_display='git log --graph --pretty=format:"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s %C(auto)%d%C(reset)" --date=short --all'
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git log --graph --pretty=format:'%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s %C(auto)%d%C(reset)' --date=short --all
 
 } # fn_git_log_graph_detailed
 
@@ -490,10 +492,10 @@ function fn_git_log_graph_detailed()
 # ----------------------------------------------------------------------------
 function fn_git_log_oneline()
 {
-    local git_command="git log --pretty=format:\"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s\" --date=short --all"
+    local git_command_display='git log --pretty=format:"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s" --date=short --all'
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git log --pretty=format:'%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %s' --date=short --all
 
 } # fn_git_log_oneline
 
@@ -513,10 +515,10 @@ function fn_git_log_oneline()
 # ----------------------------------------------------------------------------
 function fn_git_log_oneline_detailed()
 {
-    local git_command="git log --pretty=format:\"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %C(magenta)%><(22,ltrunc)%aN%C(reset)  %s %C(auto)%d%C(reset)\"  --date=short --all"
+    local git_command_display='git log --pretty=format:"%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %C(magenta)%><(22,ltrunc)%aN%C(reset)  %s %C(auto)%d%C(reset)"  --date=short --all'
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git log --pretty=format:'%C(yellow)%h%C(reset)  %C(cyan)%ad%C(reset)  %C(magenta)%><(22,ltrunc)%aN%C(reset)  %s %C(auto)%d%C(reset)' --date=short --all
 
 } # fn_git_log_oneline_detailed
 
@@ -530,10 +532,10 @@ function fn_git_log_oneline_detailed()
 # ----------------------------------------------------------------------------
 function fn_git_show()
 {
-    local git_command="git show \"$@\""
+    local git_command_display="git show $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git show "$@"
 
 } # fn_git_show
 
@@ -547,10 +549,10 @@ function fn_git_show()
 # ----------------------------------------------------------------------------
 function fn_git_show_summary()
 {
-    local git_command="git show \"$@\" --stat"
+    local git_command_display="git show --stat $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git show --stat "$@"
 
 } # fn_git_show_summary
 
@@ -564,10 +566,10 @@ function fn_git_show_summary()
 # ----------------------------------------------------------------------------
 function fn_git_stash()
 {
-    local git_command="git stash"
+    local git_command_display="git stash"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git stash
 
 } # fn_git_stash
 
@@ -581,10 +583,10 @@ function fn_git_stash()
 # ----------------------------------------------------------------------------
 function fn_git_stash_list()
 {
-    local git_command="git stash list"
+    local git_command_display="git stash list"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git stash list
 
 } # fn_git_stash_list
 
@@ -598,10 +600,10 @@ function fn_git_stash_list()
 # ----------------------------------------------------------------------------
 function fn_git_stash_save()
 {
-    local git_command="git stash save \"$@\""
+    local git_command_display="git stash save $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git stash save "$@"
 
 } # fn_git_stash_save
 
@@ -615,10 +617,10 @@ function fn_git_stash_save()
 # ----------------------------------------------------------------------------
 function fn_git_stash_pop()
 {
-    local git_command="git stash pop \"$@\""
+    local git_command_display="git stash pop $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git stash pop "$@"
 
 } # fn_git_stash_pop
 
@@ -632,10 +634,10 @@ function fn_git_stash_pop()
 # ----------------------------------------------------------------------------
 function fn_git_stash_apply()
 {
-    local git_command="git stash apply \"$@\""
+    local git_command_display="git stash apply $*"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git stash apply "$@"
 
 } # fn_git_stash_apply
 
@@ -649,16 +651,16 @@ function fn_git_stash_apply()
 # ----------------------------------------------------------------------------
 function fn_git_stash_drop()
 {
-    local git_command="git stash drop \"$@\""
+    local git_command_display="git stash drop $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Drop stash '$@'?" N; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git stash drop "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_stash_drop
@@ -673,16 +675,16 @@ function fn_git_stash_drop()
 # ----------------------------------------------------------------------------
 function fn_git_push()
 {
-    local git_command="git push"
+    local git_command_display="git push"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Push to remote repository?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git push
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_push
@@ -697,16 +699,16 @@ function fn_git_push()
 # ----------------------------------------------------------------------------
 function fn_git_push_branch()
 {
-    local git_command="git push -u origin HEAD"
+    local git_command_display="git push -u origin HEAD"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Push current branch to remote repository?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git push -u origin HEAD
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_push_branch
@@ -721,16 +723,16 @@ function fn_git_push_branch()
 # ----------------------------------------------------------------------------
 function fn_git_push_branch_by_name()
 {
-    local git_command="git push -u origin \"$@\""
+    local git_command_display="git push -u origin $*"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Push branch '$@' to remote repository?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git push -u origin "$@"
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_push_branch_by_name
@@ -745,16 +747,16 @@ function fn_git_push_branch_by_name()
 # ----------------------------------------------------------------------------
 function fn_git_pull()
 {
-    local git_command="git pull"
+    local git_command_display="git pull"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Pull from remote repository?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git pull
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_pull
@@ -769,16 +771,16 @@ function fn_git_pull()
 # ----------------------------------------------------------------------------
 function fn_git_pull_rebase()
 {
-    local git_command="git pull --rebase"
+    local git_command_display="git pull --rebase"
 
-    _display_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
 
     printf "\n"
     if confirm_choice " Git: Pull (+rebase) from remote repository?" Y; then
         printf "\n"
-        _execute_git_command "${git_command}"
+        _execute_git_command "${git_command_display}" git pull --rebase
     else
-        _ignore_git_command  "${git_command}"
+        _ignore_git_command "${git_command_display}"
     fi
 
 } # fn_git_pull_rebase
@@ -793,10 +795,10 @@ function fn_git_pull_rebase()
 # ----------------------------------------------------------------------------
 function fn_git_merge()
 {
-    local git_command="git merge --no-ff --progress"
+    local git_command_display="git merge --no-ff --progress"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git merge --no-ff --progress
 
 } # fn_git_merge
 
@@ -810,10 +812,10 @@ function fn_git_merge()
 # ----------------------------------------------------------------------------
 function fn_git_merge_ff()
 {
-    local git_command="git merge --ff-only"
+    local git_command_display="git merge --ff-only"
 
-    _display_git_command "${git_command}"
-    _execute_git_command "${git_command}"
+    _display_git_command "${git_command_display}"
+    _execute_git_command "${git_command_display}" git merge --ff-only
 
 } # fn_git_merge_ff
 
