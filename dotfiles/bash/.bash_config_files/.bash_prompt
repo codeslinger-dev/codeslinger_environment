@@ -121,16 +121,16 @@ function set_prompt()
 
     # Count number of files in the current directory
     local files
-    files=$(ls -A | wc -l | tr -d '[:space:]')
+    files=$(find . -mindepth 1 -maxdepth 1 | wc -l | tr -d '[:space:]')
 
 
     # Fetch total size of current directory
     #  - unsupported on SunOS
-    if [[ `uname -s` == "SunOS" ]]; then
+    if [[ $(uname -s) == "SunOS" ]]; then
       local total_size=""
     else
       local total_size
-      total_size=$(ls -lah | grep -m 1 total | sed 's/total //')
+      total_size=$(du -sh . 2>/dev/null | awk '{ print $1 }')
     fi
 
     # Format CWD (change color of path separators)

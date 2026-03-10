@@ -14,7 +14,11 @@
 
 # -- Use color, if supported -------------------------------------------------
 if [ -x /usr/bin/dircolors ]; then
-  test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+  if test -r ~/.dircolors; then
+    eval "$(dircolors -b ~/.dircolors)"
+  else
+    eval "$(dircolors -b)"
+  fi
 
   # Common commands
   alias    ls='ls --color=auto'
@@ -71,28 +75,28 @@ fi
 alias less='less -R'
 
 # Show just my running processes
-alias psme="ps -aef | grep ${USER}"
+alias psme='ps -aef | grep ${USER}'
 
 # Type "please" to re-run your previous command under 'sudo'
 alias please='sudo $(fc -ln -1)'
 
 # Launch Web Browser (w/ params):  Mozilla Firefox
-alias ffox='function _ffox()
+function ffox()
 {
   firefox "$@" &> /dev/null &
-}; _ffox'
+}
 
 # Launch Web Browser (w/ params):  Google Chrome
-alias chrome='function _chrome()
+function chrome()
 {
   google-chrome "$@" &> /dev/null &
-}; _chrome'
+}
 
 # Launch Application (w/ params):  Spyder (Python IDE)
-alias spyder='function _spyder()
+function spyder()
 {
   \spyder "$@" &> /dev/null &
-}; _spyder'
+}
 
 
 # Search aliases (defined in .bash_functions)

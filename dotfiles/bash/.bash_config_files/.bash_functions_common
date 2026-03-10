@@ -122,7 +122,7 @@ function confirm_choice()
         # Read the response
         #  - use /dev/tty in case stdin is
         #    redirected from somewhere else
-        read reply </dev/tty
+        read -r reply </dev/tty
 
         # Use default?
         if [[ -z "$reply" ]] ; then
@@ -837,10 +837,10 @@ function xterm_set_title()
 # ----------------------------------------------------------------------------
 function xterm_invoke_ssh()
 {
-   local ssh_params="$@"
+    local -a ssh_params=("$@")
 
-   xterm_set_title "Running: 'ssh ${ssh_params}'"
-   \ssh "${ssh_params}"
+    xterm_set_title "Running: 'ssh ${ssh_params[*]}'"
+    \ssh "${ssh_params[@]}"
 
 } # xterm_invoke_ssh()
 
@@ -854,10 +854,10 @@ function xterm_invoke_ssh()
 # ----------------------------------------------------------------------------
 function xterm_invoke_su()
 {
-   local su_params="$@"
+    local -a su_params=("$@")
 
-   xterm_set_title "Running: 'su ${su_params}'"
-   \su "${su_params}"
+    xterm_set_title "Running: 'su ${su_params[*]}'"
+    \su "${su_params[@]}"
 
 } # xterm_invoke_su()
 
@@ -878,7 +878,7 @@ function xterm_invoke_su()
 # ----------------------------------------------------------------------------
 function print_rainbow_line()
 {
-  local color_array=($TC_RED $TC_YEL $TC_GRN $TC_BLU $TC_CYN $TC_MAG)
+    local color_array=("$TC_RED" "$TC_YEL" "$TC_GRN" "$TC_BLU" "$TC_CYN" "$TC_MAG")
   local count_max=60
   local count=0
   local c='-'
@@ -910,19 +910,19 @@ function print_rainbow_line()
   else
 
     # Print a character at a time, cycling colors
-    for n in $(eval echo "{1..$count_max}") ; do
+    for ((i=1; i<=count_max; i++)); do
 
         local col="${color_array[$count]}"
 
-        printf "${col}%b" "$c"
+        printf "%b%b" "${col}" "$c"
 
-        count=$(($count + 1))
-        count=$(expr $count % 6)
+        count=$((count + 1))
+        count=$((count % 6))
 
     done
 
     # print newline
-    printf "${TC_OFF}\n"
+        printf "%b\n" "${TC_OFF}"
 
   fi
 

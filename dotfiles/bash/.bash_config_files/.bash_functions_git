@@ -172,7 +172,7 @@ function fn_git_cherry_pick()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Apply the following commit '$@'?" Y; then
+    if confirm_choice " Git: Apply the following commit '$*'?" Y; then
         printf "\n"
         _execute_git_command "${git_command_display}" git cherry-pick "$@"
     else
@@ -197,7 +197,7 @@ function fn_git_cherry_pick_append()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Apply the following commit '$@'?" Y; then
+    if confirm_choice " Git: Apply the following commit '$*'?" Y; then
         printf "\n"
         _execute_git_command "${git_command_display}" git cherry-pick -x "$@"
     else
@@ -238,7 +238,7 @@ function fn_git_commit_message()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Commit with message '$@'?" Y; then
+    if confirm_choice " Git: Commit with message '$*'?" Y; then
         printf "\n"
         _execute_git_command "${git_command_display}" git commit --message "$@"
     else
@@ -263,7 +263,7 @@ function fn_git_commit_amend_message()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Amend previous commit with message '$@'?" Y; then
+    if confirm_choice " Git: Amend previous commit with message '$*'?" Y; then
         printf "\n"
         _execute_git_command "${git_command_display}" git commit --amend --message "$@"
     else
@@ -304,7 +304,7 @@ function fn_git_branch_delete()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Delete branch '$@'?" N; then
+    if confirm_choice " Git: Delete branch '$*'?" N; then
         printf "\n"
         _execute_git_command "${git_command_display}" git branch --delete "$@"
     else
@@ -345,7 +345,7 @@ function fn_git_checkout_branch()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Create and checkout new branch '$@'?" Y; then
+    if confirm_choice " Git: Create and checkout new branch '$*'?" Y; then
         printf "\n"
         _execute_git_command "${git_command_display}" git checkout -b "$@"
     else
@@ -656,7 +656,7 @@ function fn_git_stash_drop()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Drop stash '$@'?" N; then
+    if confirm_choice " Git: Drop stash '$*'?" N; then
         printf "\n"
         _execute_git_command "${git_command_display}" git stash drop "$@"
     else
@@ -728,7 +728,7 @@ function fn_git_push_branch_by_name()
     _display_git_command "${git_command_display}"
 
     printf "\n"
-    if confirm_choice " Git: Push branch '$@' to remote repository?" Y; then
+    if confirm_choice " Git: Push branch '$*' to remote repository?" Y; then
         printf "\n"
         _execute_git_command "${git_command_display}" git push -u origin "$@"
     else

@@ -27,7 +27,8 @@ WHT='\033[0;97m'
 OFF='\033[0m'
 
 # Timestamp (current)
-export TIME_AT_LOGOUT=`date '+%F %r'`
+TIME_AT_LOGOUT=$(date '+%F %r')
+export TIME_AT_LOGOUT
 
 # Display
 echo -e ""
@@ -41,7 +42,7 @@ echo -e ""
 # Delay and exit
 COUNT=4
 while [ $COUNT -gt 0 ]; do
-  let COUNT=COUNT-1
+  ((COUNT=COUNT-1))
   xterm_set_title "xterm | ${USER} @ $(hostname) | Exiting in $COUNT.."
   echo -ne                                "\rExiting in ${MAG}$COUNT${OFF}.."
   sleep 0.4

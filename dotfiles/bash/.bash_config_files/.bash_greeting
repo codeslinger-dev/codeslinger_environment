@@ -36,9 +36,7 @@ fi
 function display_system_uptime()
 {
   # Check if the version of 'uptime' supports the "pretty format" option (-p)
-  uptime -p >/dev/null 2>&1
-
-  if [ "$?" -eq 0 ]; then
+  if uptime -p >/dev/null 2>&1; then
 
     # Pretty-format:  Supported
 
@@ -89,9 +87,7 @@ function display_processor_name()
   # Attempt #3:  Parse lscpu results
   if [[ -z "$CPU_NAME" ]]; then
     # Check if available
-    lscpu >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if lscpu >/dev/null 2>&1; then
       CPU_NAME=$(lscpu | grep 'Model name' | cut -f 2 -d ":" | awk '{$1=$1}1')
     fi
   fi
@@ -99,9 +95,7 @@ function display_processor_name()
   # Attempt #4:  Parse sysctl results (MacOS)
   if [[ -z "$CPU_NAME" ]]; then
     # Check if available
-    sysctl -n machdep.cpu.brand_string  >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if sysctl -n machdep.cpu.brand_string  >/dev/null 2>&1; then
       CPU_NAME=$(sysctl -n machdep.cpu.brand_string)
     fi
   fi
@@ -109,9 +103,7 @@ function display_processor_name()
   # Attempt #5:  Parse sysctl results (FreeBSD)
   if [[ -z "$CPU_NAME" ]]; then
     # Check if available
-    sysctl -n hw.model  >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if sysctl -n hw.model  >/dev/null 2>&1; then
       CPU_NAME=$(sysctl -n hw.model)
     fi
   fi
@@ -141,9 +133,7 @@ function display_num_cpu_cores()
   local cores_per_socket=1
 
   # Check for 'lscpu' command
-  lscpu >/dev/null 2>&1
-
-  if [ "$?" -eq 0 ]; then
+  if lscpu >/dev/null 2>&1; then
     num_sockets=$(lscpu | grep "Socket(s):" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
 
     # system uses "clusters" rather than sockets? (RaspPi)
@@ -161,9 +151,7 @@ function display_num_cpu_cores()
   # Attempt 2
   if [[ -z "$NUM_CPU_CORES" ]]; then
     # Check if available
-    sysctl -n  hw.physicalcpu >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if sysctl -n  hw.physicalcpu >/dev/null 2>&1; then
       NUM_CPU_CORES=$(sysctl -n hw.physicalcpu)
     fi
   fi
@@ -194,9 +182,7 @@ function display_num_cpu_hwthreads()
   local threads_per_core=1
 
   # Check for 'lscpu' command
-  lscpu >/dev/null 2>&1
-
-  if [ "$?" -eq 0 ]; then
+  if lscpu >/dev/null 2>&1; then
     threads_per_core=$(lscpu | grep "Thread(s) per core:" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
   else
     threads_per_core=$( echo "$(getconf _NPROCESSORS_ONLN)" / "${num_cores}" | bc )
@@ -287,9 +273,7 @@ function display_mem_total()
   # Attempt #2:  Parse sysctl results for memory (in bytes) (macOS)
   if [[ -z "$MEM_SIZE" ]]; then
     # Check if available
-    sysctl -n hw.memsize  >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if sysctl -n hw.memsize  >/dev/null 2>&1; then
       MEM_SIZE=$(sysctl -n hw.memsize)
       MEM_SIZE=$( echo "${MEM_SIZE} / 1024" | bc )
     fi
@@ -298,9 +282,7 @@ function display_mem_total()
   # Attempt #3:  Parse sysctl results for memory (in bytes) (FreeBSD)
   if [[ -z "$MEM_SIZE" ]]; then
     # Check if available
-    sysctl -n hw.physmem  >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if sysctl -n hw.physmem  >/dev/null 2>&1; then
       MEM_SIZE=$(sysctl -n hw.physmem)
       MEM_SIZE=$( echo "${MEM_SIZE} / 1024" | bc )
     fi
@@ -344,15 +326,11 @@ function display_mem_free()
   # Attempt #3: Parse sysctl results for memory (in bytes)  (FreeBSD)
   if [[ -z "$MEM_FREE" ]]; then
     # Check if available
-    sysctl -n hw.pagesize  >/dev/null 2>&1
-
-    if [ "$?" -eq 0 ]; then
+    if sysctl -n hw.pagesize  >/dev/null 2>&1; then
       page_size=$(sysctl -n hw.pagesize)
 
       # Check if available
-      sysctl -n vm.stats.vm.v_free_count  >/dev/null 2>&1
-
-      if [ "$?" -eq 0 ]; then
+      if sysctl -n vm.stats.vm.v_free_count  >/dev/null 2>&1; then
         free_bytes_per_page=$(sysctl -n vm.stats.vm.v_free_count)
         MEM_FREE=$( echo "${page_size} * ${free_bytes_per_page} / 1024" | bc )
       fi
@@ -383,7 +361,7 @@ function display_greeting()
 {
   # Fetch system information
   local sys_user
-  sys_user=$( echo "$USER" )
+  sys_user="$USER"
   local sys_host
   sys_host=$(hostname)
   local sys_kernel_name
@@ -427,8 +405,8 @@ function display_greeting()
   echo ""
   echo -e  "\n\e(0lqq\e(B[ ${TC_BLU}Welcome${TC_OFF} ]\e(0qqqqqqqqq\e(B" 
   echo -e  "\e(0x\e(B"
-  echo -e  "\e(0x\e(B ${TC_CYN}Date${TC_OFF} : `date '+%Y %B %d'` (${TC_GRN}`date '+%A'`${TC_OFF})"
-  echo -e  "\e(0x\e(B ${TC_CYN}Time${TC_OFF} : `date '+%r'` ${TC_DRK}`date '+%Z'`${TC_OFF}"
+  echo -e  "\e(0x\e(B ${TC_CYN}Date${TC_OFF} : $(date '+%Y %B %d') (${TC_GRN}$(date '+%A')${TC_OFF})"
+  echo -e  "\e(0x\e(B ${TC_CYN}Time${TC_OFF} : $(date '+%r') ${TC_DRK}$(date '+%Z')${TC_OFF}"
   echo -e  "\e(0x\e(B ${TC_CYN}Host${TC_OFF} : ${TC_YEL}${sys_user}${TC_OFF} @ ${TC_YEL}${sys_host}${TC_OFF}"
   echo -e  "\e(0x\e(B  - ${TC_MAG}system${TC_OFF}    : ${sys_kernel_name} ${TC_MAG}|${TC_OFF} ${sys_kernel_rel} ${TC_MAG}|${TC_OFF} ${sys_kernel_arch}"
   echo -e  "\e(0x\e(B  - ${TC_MAG}processor${TC_OFF} : ${sys_cpu} ${TC_MAG}|${TC_OFF} ${sys_cpu_cores}C/${sys_cpu_threads}T"
