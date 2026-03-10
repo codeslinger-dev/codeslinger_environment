@@ -54,6 +54,68 @@ if [ -f  "${SCRIPT_DIR}/.bash_functions_git" ]; then
 fi
 
 
+# -- Python virtual environment helpers --------------------------------------
+# Keep virtualenv from changing PS1 directly; prompt is managed separately.
+if [[ -z ${VIRTUAL_ENV_DISABLE_PROMPT+x} ]]; then
+  export VIRTUAL_ENV_DISABLE_PROMPT=1
+fi
+
+function _env_python_find_local_venv_activate()
+{
+  local activate_script=""
+
+  if [[ -f "${PWD}/.venv/bin/activate" ]]; then
+    activate_script="${PWD}/.venv/bin/activate"
+  elif [[ -f "${PWD}/venv/bin/activate" ]]; then
+    activate_script="${PWD}/venv/bin/activate"
+  fi
+
+  printf '%s\n' "${activate_script}"
+} # _env_python_find_local_venv_activate()
+
+
+function env_python_auto_venv()
+{
+  local activate_script
+  activate_script=$(_env_python_find_local_venv_activate)
+
+  if [[ -z ${VIRTUAL_ENV:-} && -n ${activate_script} ]]; then
+    # shellcheck disable=SC1090
+    source "${activate_script}"
+    __ENV_AUTO_VENV_ROOT="${PWD}"
+    export __ENV_AUTO_VENV_ROOT
+    return
+  fi
+
+  if [[ -n ${VIRTUAL_ENV:-} && -n ${__ENV_AUTO_VENV_ROOT:-} ]]; then
+    if [[ ${PWD} != "${__ENV_AUTO_VENV_ROOT}" && ${PWD} != "${__ENV_AUTO_VENV_ROOT}"/* ]]; then
+      if declare -F deactivate > /dev/null; then
+        deactivate
+      fi
+      unset __ENV_AUTO_VENV_ROOT
+    fi
+  fi
+} # env_python_auto_venv()
+
+
+function env_python_auto_venv_hook()
+{
+  env_python_auto_venv
+} # env_python_auto_venv_hook()
+
+
+# Add auto-venv hook to PROMPT_COMMAND once (interactive shells only)
+if [[ $- == *i* ]]; then
+  if [[ ${PROMPT_COMMAND:-} != *env_python_auto_venv_hook* ]]; then
+    if [[ -n ${PROMPT_COMMAND:-} ]]; then
+      PROMPT_COMMAND="env_python_auto_venv_hook; ${PROMPT_COMMAND}"
+    else
+      PROMPT_COMMAND="env_python_auto_venv_hook"
+    fi
+  fi
+fi
+
+
 # -- File has been sourced ---------------------------------------------------
 FILE_SOURCED_FUNCTIONS=TRUE
 

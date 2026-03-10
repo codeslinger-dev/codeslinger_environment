@@ -127,6 +127,16 @@ alias  su='xterm_invoke_su'
 # Display the contents of PATH variable (line-by-line)
 alias display-path='echo "" ; echo $PATH | tr : "\n" ; echo ""'
 
+# Environment modules (HPC)
+if command -v module &> /dev/null; then
+  alias      ml='module list'
+  alias      ma='module avail'
+  alias      ms='module spider'
+  alias   mload='module load'
+  alias munload='module unload'
+  alias  mpurge='module purge'
+fi
+
 # Gather system hardware specs and dump them to a local HTML file
 alias dump-hw-specs='sudo lshw -html > ./hardware_specs.html; echo "Created file => ./hardware_specs.html"'
 
