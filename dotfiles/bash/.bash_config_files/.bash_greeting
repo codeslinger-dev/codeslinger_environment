@@ -351,6 +351,82 @@ function display_mem_free()
 
 
 # ----------------------------------------------------------------------------
+#  FUNCTION NAME: display_os_version
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Display the detected operating system version
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function display_os_version()
+{
+  local os_version=""
+  local release_file=""
+
+  # Linux distro release files (prefer explicit one-line release text)
+  #  - Note: Keep /etc/redhat-release first, then scan
+  #          common release-file patterns
+  for release_file in /etc/redhat-release /etc/*-release /etc/*_release /etc/release; do
+    if [[ -f "${release_file}" ]]; then
+      case "${release_file}" in
+        /etc/os-release|/etc/lsb-release)
+          continue
+          ;;
+      esac
+
+      os_version=$(head -n 1 "${release_file}")
+      if [[ -n "${os_version}" ]]; then
+        break
+      fi
+    fi
+  done
+
+  # Generic Linux fallback
+  if [[ -z "${os_version}" && -f /etc/os-release ]]; then
+    os_version=$(awk -F= '/^PRETTY_NAME=/{gsub(/"/,"",$2); print $2; exit}' /etc/os-release)
+  fi
+
+  # LSB fallback (if PRETTY_NAME is unavailable)
+  if [[ -z "${os_version}" && -f /etc/lsb-release ]]; then
+    os_version=$(awk -F= '/^DISTRIB_DESCRIPTION=/{gsub(/"/,"",$2); print $2; exit}' /etc/lsb-release)
+  fi
+
+  # Debian fallback
+  if [[ -z "${os_version}" && -f /etc/debian_version ]]; then
+    os_version="Debian $(head -n 1 /etc/debian_version)"
+  fi
+
+  # BSD/macOS fallback
+  if [[ -z "${os_version}" ]]; then
+    case "$(uname -s 2>/dev/null)" in
+      FreeBSD|OpenBSD|NetBSD|DragonFly)
+        os_version="$(uname -s) $(uname -r)"
+        ;;
+      Darwin)
+        if command -v sw_vers >/dev/null 2>&1; then
+          os_version="$(sw_vers -productName) $(sw_vers -productVersion)"
+        else
+          os_version="Darwin $(uname -r)"
+        fi
+        ;;
+      CYGWIN*|MINGW*|MSYS*)
+        os_version="$(uname -s) $(uname -r)"
+        ;;
+      Linux)
+        os_version="Linux $(uname -r)"
+        ;;
+    esac
+  fi
+
+  if [[ -z "${os_version}" ]]; then
+    os_version="<unknown>"
+  fi
+
+  echo "${os_version}"
+
+} # display_os_version()
+
+
+# ----------------------------------------------------------------------------
 #  FUNCTION NAME: display_greeting
 # ----------------------------------------------------------------------------
 #  DESCRIPTION  : Display the system greeting
@@ -370,6 +446,8 @@ function display_greeting()
   sys_kernel_rel=$(uname -r)
   local sys_kernel_arch
   sys_kernel_arch=$(uname -m)
+  local sys_os_version
+  sys_os_version=$(display_os_version)
   local sys_cpu
   sys_cpu=$(display_processor_name)
   local sys_cpu_cores
@@ -389,19 +467,6 @@ function display_greeting()
 
 
   # Display Greeting
-
-#  echo ""
-#  echo -e "--------------------------------------------------------------------"
-#  echo -e " ${TC_CYN}Date${TC_OFF} :  `date '+%Y %B %d'` (${TC_GRN}`date '+%A'`${TC_OFF})"
-#  echo -e " ${TC_CYN}Time${TC_OFF} :  `date '+%r'` ${TC_DRK}`date '+%Z'`${TC_OFF}"
-#  echo -e " ${TC_CYN}Host${TC_OFF} :  ${TC_YEL}${sys_user}${TC_OFF} @ ${TC_YEL}${sys_host}${TC_OFF}"
-#  echo -e "  - ${TC_MAG}system${TC_OFF}    : ${sys_kernel_name} ${TC_MAG}|${TC_OFF} ${sys_kernel_rel} ${TC_MAG}|${TC_OFF} ${sys_kernel_arch}"
-#  echo -e "  - ${TC_MAG}processor${TC_OFF} : ${sys_cpu} ${TC_MAG}|${TC_OFF} ${sys_cpu_cores}C/${sys_cpu_threads}T"
-#  echo -e "  - ${TC_MAG}ram${TC_OFF}       : ${sys_mem_size} GB total ${TC_MAG}|${TC_OFF} ${sys_mem_free} GB free"
-#  echo -e "  - ${TC_MAG}/home${TC_OFF}     : ${sys_homedir_size} total ${TC_MAG}|${TC_OFF} ${sys_homedir_free} free"
-#  echo -e "  - ${TC_MAG}uptime${TC_OFF}    : ${sys_uptime}"
-#  echo -e "--------------------------------------------------------------------"
-#  echo ""
   echo ""
   echo -e  "\n\e(0lqq\e(B[ ${TC_BLU}Welcome${TC_OFF} ]\e(0qqqqqqqqq\e(B" 
   echo -e  "\e(0x\e(B"
@@ -409,6 +474,7 @@ function display_greeting()
   echo -e  "\e(0x\e(B ${TC_CYN}Time${TC_OFF} : $(date '+%r') ${TC_DRK}$(date '+%Z')${TC_OFF}"
   echo -e  "\e(0x\e(B ${TC_CYN}Host${TC_OFF} : ${TC_YEL}${sys_user}${TC_OFF} @ ${TC_YEL}${sys_host}${TC_OFF}"
   echo -e  "\e(0x\e(B  - ${TC_MAG}system${TC_OFF}    : ${sys_kernel_name} ${TC_MAG}|${TC_OFF} ${sys_kernel_rel} ${TC_MAG}|${TC_OFF} ${sys_kernel_arch}"
+  echo -e  "\e(0x\e(B  - ${TC_MAG}os ver${TC_OFF}    : ${sys_os_version}"
   echo -e  "\e(0x\e(B  - ${TC_MAG}processor${TC_OFF} : ${sys_cpu} ${TC_MAG}|${TC_OFF} ${sys_cpu_cores}C/${sys_cpu_threads}T"
   echo -e  "\e(0x\e(B  - ${TC_MAG}ram${TC_OFF}       : ${sys_mem_size} GB total ${TC_MAG}|${TC_OFF} ${sys_mem_free} GB free"
   echo -e  "\e(0x\e(B  - ${TC_MAG}/home${TC_OFF}     : ${sys_homedir_size} total ${TC_MAG}|${TC_OFF} ${sys_homedir_free} free"
