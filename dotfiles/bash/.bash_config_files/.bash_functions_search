@@ -3,10 +3,10 @@
 #
 # This file defines the Search functions to be used in a Bash session.
 #
-# This file is intended to be "sourced" by .bashrc (or similar):
+# This file is intended to be "sourced" by .bash_functions:
 #
-#    if [ -f /<path>/.bash_functions_common ]; then
-#     source /<path>/.bash_functions_common
+#    if [ -f /<path>/.bash_functions_search ]; then
+#     source /<path>/.bash_functions_search
 #    fi
 #
 # ----------------------------------------------------------------------------

@@ -33,10 +33,18 @@ HISTTIMEFORMAT="[ %F / %T ]  "
  # --  Put multi-line commands into one history entry ------------------------
 shopt -s cmdhist
 
+# -- Verify command history expansion before executing -----------------------
+shopt -s histverify
+
+# -- HISTIGNORE: Filter trivial commands from history ------------------------
+export HISTIGNORE='ls:la:ll:cd:pwd:exit:history:h:hs:clear:fg:bg:jobs'
+
 # -- Correct small errors in directory names given to the `cd` buildtin ------
 shopt -s cdspell
 
-# -- Check that hashed commands still exist before running them --------------
+# -- Che
+# -- Error handling trap (optional: shows line number on error) --------------
+# Uncomment to enable: trap 'echo "Command failed at line $LINENO"' ERRck that hashed commands still exist before running them --------------
 shopt -s checkhash
 
 # -- Expand aliases in shell scripts -----------------------------------------
@@ -44,6 +52,25 @@ shopt -s expand_aliases
 
 # -- Update the values of LINES and COLUMNS after windows resize -------------
 shopt -s checkwinsize
+
+# -- FIGNORE: Exclude patterns from tab completion ---------------------------
+export FIGNORE='~:.o:.pyc:.git:.swp'
+
+# -- Extended globbing patterns for flexible path matching -------------------
+shopt -s extglob       # Enable ?(pattern|list) !() *() +() @() patterns
+shopt -s nullglob      # Don't return glob if no matches found
+shopt -s globstar      # Enable ** recursive glob expansion
+shopt -s dotglob       # Include dotfiles in glob expansion
+
+# -- Error handling trap (optional: shows line number on error) --------------
+# Uncomment to enable: trap 'echo "Command failed at line $LINENO"' ERR
+
+# -- Command not found helper (if available) ---------------------------------
+if [ -x /usr/lib/command-not-found ]; then
+  source /usr/lib/command-not-found 2>/dev/null
+elif [ -x /etc/profile.d/bash_command_not_found.sh ]; then
+  source /etc/profile.d/bash_command_not_found.sh 2>/dev/null
+fi
 
 
 # -- Make less more friendly for non-text input files, see lesspipe(1) -------
