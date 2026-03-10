@@ -41,6 +41,32 @@ source ~/.bashrc
 
 Use `~/.bash_settings_custom` for machine-specific settings so updates do not overwrite local preferences.
 
+### Performance tuning for slow filesystems
+
+If you're working on NFS mounts or other slow storage, you can optimize the git prompt by disabling expensive status checks. Add these to `~/.bash_settings_custom` or export before sourcing:
+
+```bash
+# Disable git dirty state checking (fastest performance boost)
+export ENV_GIT_SHOW_DIRTY=0
+
+# Disable untracked file detection
+export ENV_GIT_SHOW_UNTRACKED=0
+
+# Disable stash indicator
+export ENV_GIT_SHOW_STASH=0
+
+# Change upstream display (default: "git")
+export ENV_GIT_SHOW_UPSTREAM="git"
+```
+
+**Available options:**
+- `ENV_GIT_SHOW_DIRTY` (default: `1`) - Shows `*` for unstaged changes, `+` for staged changes. Most expensive check.
+- `ENV_GIT_SHOW_UNTRACKED` (default: `0`) - Shows `%` for untracked files.
+- `ENV_GIT_SHOW_STASH` (default: `0`) - Shows `$` when stash exists.
+- `ENV_GIT_SHOW_UPSTREAM` (default: `"git"`) - Shows `<` (behind), `>` (ahead), `<>` (diverged), `=` (in sync).
+
+Setting `ENV_GIT_SHOW_DIRTY=0` provides the biggest performance improvement while keeping branch name and ahead/behind status.
+
 ## Repo layout
 
 - `dotfiles/bash/` → Bash config + modular aliases/functions/prompt/greeting

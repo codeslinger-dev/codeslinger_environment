@@ -64,6 +64,64 @@ function font()
 } # font()
 
 
+function get_now_epoch_seconds()
+{
+    printf '%(%s)T\n' -1
+} # get_now_epoch_seconds()
+
+
+__PROMPT_DIR_STATS_CACHE_PWD=""
+__PROMPT_DIR_STATS_CACHE_FILES=""
+__PROMPT_DIR_STATS_CACHE_SIZE=""
+__PROMPT_DIR_STATS_CACHE_TS=0
+
+function get_cached_directory_stats()
+{
+    local now
+    now=$(get_now_epoch_seconds)
+
+    local ttl_seconds="${CK_PROMPT_DIR_STATS_CACHE_TTL_SECONDS:-3}"
+    local cache_age=$((now - __PROMPT_DIR_STATS_CACHE_TS))
+
+    if [[ ${PWD} != "${__PROMPT_DIR_STATS_CACHE_PWD}" || ${cache_age} -ge ${ttl_seconds} ]]; then
+        __PROMPT_DIR_STATS_CACHE_PWD="${PWD}"
+        __PROMPT_DIR_STATS_CACHE_FILES=$(find . -mindepth 1 -maxdepth 1 | wc -l | tr -d '[:space:]')
+
+        if [[ $(uname -s) == "SunOS" ]]; then
+            __PROMPT_DIR_STATS_CACHE_SIZE=""
+        else
+            __PROMPT_DIR_STATS_CACHE_SIZE=$(du -sh . 2>/dev/null | awk '{ print $1 }')
+        fi
+
+        __PROMPT_DIR_STATS_CACHE_TS=${now}
+    fi
+
+    printf '%s|%s\n' "${__PROMPT_DIR_STATS_CACHE_FILES}" "${__PROMPT_DIR_STATS_CACHE_SIZE}"
+} # get_cached_directory_stats()
+
+
+__PROMPT_GIT_INFO_CACHE_PWD=""
+__PROMPT_GIT_INFO_CACHE_VALUE=""
+__PROMPT_GIT_INFO_CACHE_TS=0
+
+function get_cached_git_info()
+{
+    local now
+    now=$(get_now_epoch_seconds)
+
+    local ttl_seconds="${CK_PROMPT_GIT_CACHE_TTL_SECONDS:-2}"
+    local cache_age=$((now - __PROMPT_GIT_INFO_CACHE_TS))
+
+    if [[ ${PWD} != "${__PROMPT_GIT_INFO_CACHE_PWD}" || ${cache_age} -ge ${ttl_seconds} ]]; then
+        __PROMPT_GIT_INFO_CACHE_PWD="${PWD}"
+        __PROMPT_GIT_INFO_CACHE_VALUE=$(__git_ps1)
+        __PROMPT_GIT_INFO_CACHE_TS=${now}
+    fi
+
+    printf '%s\n' "${__PROMPT_GIT_INFO_CACHE_VALUE}"
+} # get_cached_git_info()
+
+
 # ----------------------------------------------------------------------------
 #  FUNCTION NAME: set_prompt
 # ----------------------------------------------------------------------------
@@ -119,19 +177,11 @@ function set_prompt()
     local time_hms="\D{%I:%M:%S %p}"
     local user="\u"
 
-    # Count number of files in the current directory
-    local files
-    files=$(find . -mindepth 1 -maxdepth 1 | wc -l | tr -d '[:space:]')
-
-
-    # Fetch total size of current directory
-    #  - unsupported on SunOS
-    if [[ $(uname -s) == "SunOS" ]]; then
-      local total_size=""
-    else
-      local total_size
-      total_size=$(du -sh . 2>/dev/null | awk '{ print $1 }')
-    fi
+        # Count number of files and total size in the current directory
+        local dir_stats
+        dir_stats=$(get_cached_directory_stats)
+        local files="${dir_stats%%|*}"
+        local total_size="${dir_stats#*|}"
 
     # Format CWD (change color of path separators)
     local unformatted_cwd
@@ -144,7 +194,7 @@ function set_prompt()
 
     # Fetch git information
     local git_info
-    git_info=$(__git_ps1)
+     git_info=$(get_cached_git_info)
     if [[ ${git_info} ]]; then
        git_info=" |$(font ${fg} ${yellow})${git_info}$(font)"
     fi
@@ -214,10 +264,19 @@ function set_prompt()
 
 
 # Git-prompt controls
-GIT_PS1_SHOWUPSTREAM="git"     # '<' behind, '>' ahead, '<>' diverged, '=' no difference
-GIT_PS1_SHOWDIRTYSTATE=1       # staged '+', unstaged '*'
-GIT_PS1_SHOWSTASHSTATE=0       # '$' something is stashed
-GIT_PS1_SHOWUNTRACKEDFILES=0   # '%' untracked files
+#
+# These can be overridden via environment variables for performance tuning:
+#   - ENV_GIT_SHOW_UPSTREAM     (default: "git")
+#   - ENV_GIT_SHOW_DIRTY        (default: 1)  - Set to 0 on slow filesystems
+#   - ENV_GIT_SHOW_STASH        (default: 0)
+#   - ENV_GIT_SHOW_UNTRACKED    (default: 0)
+#
+# Example: export ENV_GIT_SHOW_DIRTY=0  # Disable dirty state for faster prompts
+#
+GIT_PS1_SHOWUPSTREAM="${ENV_GIT_SHOW_UPSTREAM:-git}"      # '<' behind, '>' ahead, '<>' diverged, '=' no difference
+GIT_PS1_SHOWDIRTYSTATE="${ENV_GIT_SHOW_DIRTY:-1}"         # staged '+', unstaged '*'
+GIT_PS1_SHOWSTASHSTATE="${ENV_GIT_SHOW_STASH:-0}"         # '$' something is stashed
+GIT_PS1_SHOWUNTRACKEDFILES="${ENV_GIT_SHOW_UNTRACKED:-0}" # '%' untracked files
 
 PROMPT_COMMAND=set_prompt
 
