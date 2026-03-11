@@ -1,0 +1,31 @@
+stages:
+    - install
+    - test
+    - finalize
+
+
+script_install:
+    stage: install
+    script:
+        - echo "=============================================================="
+        - echo "Installing scripts.."
+        - echo " - TODO "
+        - echo "=============================================================="
+
+
+script_test:
+    stage: test
+    script:
+        - echo "=============================================================="
+        - echo "Testing scripts.."
+        - echo " - TODO "
+        - echo "=============================================================="
+
+
+finalize:
+    stage: finalize
+    script:
+        - echo "=============================================================="
+        - echo "CI/CD Pipeline Complete"
+        - echo "=============================================================="
+
