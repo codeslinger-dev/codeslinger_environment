@@ -66,10 +66,13 @@ shopt -s dotglob       # Include dotfiles in glob expansion
 # Uncomment to enable: trap 'echo "Command failed at line $LINENO"' ERR
 
 # -- Command not found helper (if available) ---------------------------------
-if [ -x /usr/lib/command-not-found ]; then
-  source /usr/lib/command-not-found 2>/dev/null
-elif [ -x /etc/profile.d/bash_command_not_found.sh ]; then
-  source /etc/profile.d/bash_command_not_found.sh 2>/dev/null
+# Note: Can be slow on some systems. Disable with: export ENV_SKIP_COMMAND_NOT_FOUND=1
+if [[ "${ENV_SKIP_COMMAND_NOT_FOUND}" != "1" ]]; then
+  if [ -x /usr/lib/command-not-found ]; then
+    source /usr/lib/command-not-found 2>/dev/null
+  elif [ -x /etc/profile.d/bash_command_not_found.sh ]; then
+    source /etc/profile.d/bash_command_not_found.sh 2>/dev/null
+  fi
 fi
 
 

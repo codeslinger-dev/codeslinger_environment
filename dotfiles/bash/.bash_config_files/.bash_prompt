@@ -66,7 +66,13 @@ function font()
 
 function get_now_epoch_seconds()
 {
-    printf '%(%s)T\n' -1
+    # Try bash 4.2+ printf format first
+    if printf '%(%s)T\n' -1 >/dev/null 2>&1; then
+        printf '%(%s)T\n' -1
+    else
+        # Fallback for older bash (RHEL6, etc)
+        date +%s
+    fi
 } # get_now_epoch_seconds()
 
 
@@ -77,6 +83,12 @@ __PROMPT_DIR_STATS_CACHE_TS=0
 
 function get_cached_directory_stats()
 {
+    # Skip directory stats if disabled via environment variable
+    if [[ "${ENV_PROMPT_SKIP_DIR_STATS}" == "1" ]]; then
+        printf '0|\n'
+        return
+    fi
+
     local now
     now=$(get_now_epoch_seconds)
 
@@ -85,12 +97,12 @@ function get_cached_directory_stats()
 
     if [[ ${PWD} != "${__PROMPT_DIR_STATS_CACHE_PWD}" || ${cache_age} -ge ${ttl_seconds} ]]; then
         __PROMPT_DIR_STATS_CACHE_PWD="${PWD}"
-        __PROMPT_DIR_STATS_CACHE_FILES=$(find . -mindepth 1 -maxdepth 1 | wc -l | tr -d '[:space:]')
+        __PROMPT_DIR_STATS_CACHE_FILES=$(timeout 1 find . -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d '[:space:]')
 
         if [[ $(uname -s) == "SunOS" ]]; then
             __PROMPT_DIR_STATS_CACHE_SIZE=""
         else
-            __PROMPT_DIR_STATS_CACHE_SIZE=$(du -sh . 2>/dev/null | awk '{ print $1 }')
+            __PROMPT_DIR_STATS_CACHE_SIZE=$(timeout 1 du -sh . 2>/dev/null | awk '{ print $1 }')
         fi
 
         __PROMPT_DIR_STATS_CACHE_TS=${now}

@@ -1,0 +1,60 @@
+#!/bin/bash
+# Timing profiler for .bashrc
+# Usage on Linux system: bash ~/.bash_config_files/.bashrc_profile
+# This will show timing for each major section
+
+echo "=== Profiling .bashrc load time ==="
+echo ""
+
+# Test each component individually
+echo "Testing components in isolation..."
+echo ""
+
+TIMEFORMAT='  %R seconds'
+
+echo -n "1. /etc/bashrc: "
+time source /etc/bashrc 2>/dev/null
+
+echo -n "2. .git_prompt: "
+time source ~/.bash_config_files/.git_prompt 2>/dev/null
+
+echo -n "3. .bash_prompt: "
+time source ~/.bash_config_files/.bash_prompt 2>/dev/null
+
+echo -n "4. bash-completion: "
+time {
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    source /usr/share/bash-completion/bash_completion
+  elif [ -f /usr/local/share/bash-completion/bash_completion ]; then
+    source /usr/local/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    source /etc/bash_completion
+  fi
+} 2>/dev/null
+
+echo -n "5. xrdb merge: "
+time {
+  if [ -f "$HOME/.Xresources" ] && command -v xrdb >/dev/null 2>&1; then
+    xrdb -merge "$HOME/.Xresources" 2>/dev/null
+  fi
+}
+
+echo -n "6. .bash_functions: "
+time source ~/.bash_config_files/.bash_functions 2>/dev/null
+
+echo -n "7. .bash_aliases: "
+time source ~/.bash_config_files/.bash_aliases 2>/dev/null
+
+echo -n "8. .bash_greeting (source only): "
+time source ~/.bash_config_files/.bash_greeting 2>/dev/null
+
+echo -n "9. display_greeting (execution): "
+time display_greeting 2>/dev/null
+
+echo ""
+echo "=== Full .bashrc load time ==="
+echo -n "Complete .bashrc: "
+time source ~/.bashrc
+
+echo ""
+echo "If one component takes >5 seconds, that's your bottleneck!"

@@ -25,6 +25,89 @@ if [ -z "$FILE_SOURCED_FUNCTIONS_COMMON" ]; then
 fi
 
 
+# -- Environment controls for greeting behavior ------------------------------
+# ENV_GREETING_ENABLED:   Show greeting? (default: 1)
+# ENV_GREETING_TIMEOUT:   Max seconds per function (default: 2)
+# ENV_GREETING_MINIMAL:   Skip expensive ops? (default: 0)
+export ENV_GREETING_ENABLED="${ENV_GREETING_ENABLED:-1}"
+export ENV_GREETING_TIMEOUT="${ENV_GREETING_TIMEOUT:-2}"
+export ENV_GREETING_MINIMAL="${ENV_GREETING_MINIMAL:-0}"
+
+# Skip if greeting explicitly disabled
+if [[ "${ENV_GREETING_ENABLED}" != "1" ]]; then
+  return
+fi
+
+
+# -- Check command availability upfront ----------------------------------------
+__GREETING_HAS_BC=0
+__GREETING_HAS_LSCPU=0
+__GREETING_HAS_TIMEOUT=0
+
+command -v bc      >/dev/null 2>&1  &&       __GREETING_HAS_BC=1
+command -v lscpu   >/dev/null 2>&1  &&    __GREETING_HAS_LSCPU=1
+command -v timeout >/dev/null 2>&1  &&  __GREETING_HAS_TIMEOUT=1
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: _greeting_timeout_exec
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Execute a command with timeout wrapper
+#                  Returns output if successful, returns error message on timeout
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1  = default return value if command fails
+#                 $2+ = command and arguments to execute
+# ----------------------------------------------------------------------------
+function _greeting_timeout_exec()
+{
+  local timeout_sec="${ENV_GREETING_TIMEOUT}"
+  local default_val="${1}"
+  shift
+
+  if [[ ${__GREETING_HAS_TIMEOUT} -eq 1 ]]; then
+    timeout "${timeout_sec}" "$@" 2>/dev/null || echo "<timeout>"
+  else
+    "$@" 2>/dev/null || echo "${default_val}"
+  fi
+} # _greeting_timeout_exec()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: _greeting_is_slow_filesystem
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Detect if a path is on a slow filesystem (NFS, CIFS, FUSE, SSHFS)
+#                  Returns exit code 0 if slow, 1 if fast
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = path to check (default: current directory)
+# ----------------------------------------------------------------------------
+function _greeting_is_slow_filesystem()
+{
+  local path="${1:-.}"
+  mount | awk -v p="$path" '$3 ~ /nfs|cifs|fuse|sshfs/ {exit 0} END {exit 1}'
+} # _greeting_is_slow_filesystem()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: _greeting_calc
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Perform arithmetic calculation with bc or awk fallback
+#                  Returns result as floating-point with scale=1
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : $1 = arithmetic expression (e.g. "1024 / 1024")
+# ----------------------------------------------------------------------------
+function _greeting_calc()
+{
+  local expr="${1}"
+
+  if [[ ${__GREETING_HAS_BC} -eq 1 ]]; then
+    echo "scale=1; ${expr}" | bc 2>/dev/null || echo "<calc_error>"
+  else
+    # Fallback using printf (integer-only)
+    printf "%.0f\n" "$(awk "BEGIN {print ${expr}}")" 2>/dev/null || echo "<calc_error>"
+  fi
+} # _greeting_calc()
+
+
 # ----------------------------------------------------------------------------
 #  FUNCTION NAME: display_system_uptime
 # ----------------------------------------------------------------------------
@@ -35,27 +118,34 @@ fi
 # ----------------------------------------------------------------------------
 function display_system_uptime()
 {
-  # Check if the version of 'uptime' supports the "pretty format" option (-p)
+  local UPTIME
+
+  # Verify uptime command exists
+  if ! command -v uptime >/dev/null 2>&1; then
+    echo "<unavailable>"
+    return
+  fi
+
+  # Attempt #1: Check if 'uptime' supports the "pretty format" option (-p)
   if uptime -p >/dev/null 2>&1; then
-
-    # Pretty-format:  Supported
-
-    # Note:  When the system is up for less than '0' minutes, then
+    # Pretty-format: Supported
+    # Note: When the system is up for less than '0' minutes, then
     #       'uptime -p' returns ONLY 'up', so set a default value
-
-    UPTIME_SET_OR_EMPTY=$(uptime -p | awk -F 'up ' '{print $2}')
+    UPTIME_SET_OR_EMPTY=$(uptime -p 2>/dev/null | awk -F 'up ' '{print $2}')
     UPTIME=${UPTIME_SET_OR_EMPTY:-'less than a minute'}
   else
-
-    # Pretty-format:  Unsupported
-
-    # Parse the results and format to:  days, hours, minutes
-
-    UPTIME=$(uptime | sed -E 's/^[^,]*up *//; s/mins/minutes/; s/hrs?/hours/;
+    # Attempt #2: Pretty-format unsupported, parse standard uptime output
+    # Parse the results and format to: days, hours, minutes
+    UPTIME=$(uptime 2>/dev/null | sed -E 's/^[^,]*up *//; s/mins/minutes/; s/hrs?/hours/;
     s/([[:digit:]]+):0?([[:digit:]]+)/\1 hours, \2 minutes/;
     s/^1 hours/1 hour/; s/ 1 hours/ 1 hour/;
     s/min,/minutes,/; s/ 0 minutes,/ less than a minute,/; s/ 1 minutes/ 1 minute/;
     s/  / /; s/, *[[:digit:]]* users?.*//')
+  fi
+
+  # Fallback if both methods failed
+  if [[ -z "${UPTIME}" ]]; then
+    UPTIME="<unavailable>"
   fi
 
   echo "${UPTIME}"
@@ -111,7 +201,7 @@ function display_processor_name()
 
   # Out of options:  Default value
   if [[ -z "$CPU_NAME" ]]; then
-    CPU_NAME="---"
+    CPU_NAME="<unavailable>"
   fi
 
   echo "${CPU_NAME}"
@@ -132,7 +222,7 @@ function display_num_cpu_cores()
   local num_sockets=1
   local cores_per_socket=1
 
-  # Check for 'lscpu' command
+  # Attempt #1: Check for 'lscpu' command
   if lscpu >/dev/null 2>&1; then
     num_sockets=$(lscpu | grep "Socket(s):" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
 
@@ -141,25 +231,45 @@ function display_num_cpu_cores()
       num_clusters=$(lscpu | grep "Cluster(s):" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
 
       cores_per_cluster=$(lscpu | grep "Core(s) per cluster" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
-      NUM_CPU_CORES=$( echo "${num_clusters} * ${cores_per_cluster}" | bc )
+      NUM_CPU_CORES=$(_greeting_calc "${num_clusters} * ${cores_per_cluster}")
     else
       cores_per_socket=$(lscpu | grep "Core(s) per socket" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
-      NUM_CPU_CORES=$( echo "${num_sockets} * ${cores_per_socket}" | bc )
+      NUM_CPU_CORES=$(_greeting_calc "${num_sockets} * ${cores_per_socket}")
     fi
   fi
 
-  # Attempt 2
+  # Attempt #2: macOS sysctl
   if [[ -z "$NUM_CPU_CORES" ]]; then
-    # Check if available
-    if sysctl -n  hw.physicalcpu >/dev/null 2>&1; then
+    if sysctl -n hw.physicalcpu >/dev/null 2>&1; then
       NUM_CPU_CORES=$(sysctl -n hw.physicalcpu)
     fi
   fi
 
-
-  # Out of options:  Default value
+  # Attempt #3: nproc command (GNU/Linux)
   if [[ -z "$NUM_CPU_CORES" ]]; then
-    NUM_CPU_CORES=1
+    if command -v nproc >/dev/null 2>&1; then
+      # nproc --all gives physical cores on some systems
+      NUM_CPU_CORES=$(nproc --all 2>/dev/null)
+    fi
+  fi
+
+  # Attempt #4: /proc/cpuinfo parsing (Linux)
+  if [[ -z "$NUM_CPU_CORES" ]]; then
+    if [[ -f /proc/cpuinfo ]]; then
+      NUM_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
+    fi
+  fi
+
+  # Attempt #5: POSIX getconf
+  if [[ -z "$NUM_CPU_CORES" ]]; then
+    if command -v getconf >/dev/null 2>&1; then
+      NUM_CPU_CORES=$(getconf _NPROCESSORS_CONF 2>/dev/null)
+    fi
+  fi
+
+  # Out of options: Default value
+  if [[ -z "$NUM_CPU_CORES" ]] || [[ "$NUM_CPU_CORES" == "<calc_error>" ]]; then
+    NUM_CPU_CORES="<unavailable>"
   fi
 
   echo "${NUM_CPU_CORES}"
@@ -177,23 +287,53 @@ function display_num_cpu_cores()
 # ----------------------------------------------------------------------------
 function display_num_cpu_hwthreads()
 {
-  local num_cores
-  num_cores=$(display_num_cpu_cores)
-  local threads_per_core=1
+  local NUM_CPU_HWTHREADS
 
-  # Check for 'lscpu' command
-  if lscpu >/dev/null 2>&1; then
-    threads_per_core=$(lscpu | grep "Thread(s) per core:" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
-  else
-    threads_per_core=$( echo "$(getconf _NPROCESSORS_ONLN)" / "${num_cores}" | bc )
+  # Attempt #1: POSIX getconf for online processors (most direct)
+  if command -v getconf >/dev/null 2>&1; then
+    NUM_CPU_HWTHREADS=$(getconf _NPROCESSORS_ONLN 2>/dev/null)
   fi
 
-  # Set minimum to 1
-  if [ "${threads_per_core}" -lt 1 ]; then
-    threads_per_core=1
+  # Attempt #2: lscpu calculation
+  if [[ -z "$NUM_CPU_HWTHREADS" ]]; then
+    local num_cores
+    num_cores=$(display_num_cpu_cores)
+
+    # Only calculate if we got valid core count
+    if [[ "${num_cores}" != "<unavailable>" ]] && [[ -n "${num_cores}" ]]; then
+      local threads_per_core=1
+
+      if lscpu >/dev/null 2>&1; then
+        threads_per_core=$(lscpu | grep "Thread(s) per core:" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
+      fi
+
+      # Set minimum to 1
+      if [[ "${threads_per_core}" -lt 1 ]] 2>/dev/null; then
+        threads_per_core=1
+      fi
+
+      NUM_CPU_HWTHREADS=$(_greeting_calc "${num_cores} * ${threads_per_core}")
+    fi
   fi
 
-  NUM_CPU_HWTHREADS=$( echo "${num_cores} * ${threads_per_core}" | bc )
+  # Attempt #3: nproc command
+  if [[ -z "$NUM_CPU_HWTHREADS" ]] || [[ "$NUM_CPU_HWTHREADS" == "<calc_error>" ]]; then
+    if command -v nproc >/dev/null 2>&1; then
+      NUM_CPU_HWTHREADS=$(nproc 2>/dev/null)
+    fi
+  fi
+
+  # Attempt #4: /proc/cpuinfo
+  if [[ -z "$NUM_CPU_HWTHREADS" ]]; then
+    if [[ -f /proc/cpuinfo ]]; then
+      NUM_CPU_HWTHREADS=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
+    fi
+  fi
+
+  # Out of options: Default value
+  if [[ -z "$NUM_CPU_HWTHREADS" ]] || [[ "$NUM_CPU_HWTHREADS" == "<calc_error>" ]]; then
+    NUM_CPU_HWTHREADS="<unavailable>"
+  fi
 
   echo "${NUM_CPU_HWTHREADS}"
 
@@ -209,20 +349,38 @@ function display_num_cpu_hwthreads()
 # ----------------------------------------------------------------------------
 function display_home_size_total()
 {
-  # Attempt 1
-  HOME_SIZE=$(df -h ~ |  grep -v "Size" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
-
-  # Attempt 2
-  if [[ -z "$HOME_SIZE" ]]; then
-    HOME_SIZE=$(df -h |  grep "home" | awk '{ print $2 }' | head -1 | tail -1 | tr -d '\r ')
+  # Skip on minimal mode or slow filesystems
+  if [[ "${ENV_GREETING_MINIMAL}" == "1" ]] || _greeting_is_slow_filesystem ~ ; then
+    echo "<skipped>"
+    return
   fi
 
-  # Out of options:  Default value
-  if [[ -z "$HOME_SIZE" ]]; then
-    HOME_SIZE="---"
+  # Verify home directory exists and is accessible
+  if [[ ! -d ~ ]]; then
+    echo "<unavailable>"
+    return
   fi
 
-  echo "${HOME_SIZE}"
+  local home_size
+  
+  # Use df with -l and parse by mountpoint column ($NF)
+  # Handles both one-line output and wrapped two-line output (RHEL6)
+  if command -v timeout >/dev/null 2>&1; then
+    home_size=$(timeout 1 df -hl ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $2; else print $1; exit }')
+  else
+    home_size=$(df -hl ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $2; else print $1; exit }')
+  fi
+
+  # Fallback: try without -l flag if -l not supported
+  if [[ -z "${home_size}" ]]; then
+    if command -v timeout >/dev/null 2>&1; then
+      home_size=$(timeout 1 df -h ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $2; else print $1; exit }')
+    else
+      home_size=$(df -h ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $2; else print $1; exit }')
+    fi
+  fi
+
+  echo "${home_size:-<unavailable>}"
 
 } # display_home_size_total()
 
@@ -236,20 +394,38 @@ function display_home_size_total()
 # ----------------------------------------------------------------------------
 function display_home_size_free()
 {
-  # Attempt 1
-  HOME_FREE=$(df -h ~ |  grep -v "Size" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
-
-  # Attempt 2
-  if [[ -z "$HOME_FREE" ]]; then
-    HOME_FREE=$(df -h |  grep "home" | awk '{ print $4 }' | head -1 | tail -1 | tr -d '\r ')
+  # Skip on minimal mode or slow filesystems
+  if [[ "${ENV_GREETING_MINIMAL}" == "1" ]] || _greeting_is_slow_filesystem ~ ; then
+    echo "<skipped>"
+    return
   fi
 
-  # Out of options:  Default value
-  if [[ -z "$HOME_FREE" ]]; then
-    HOME_FREE="---"
+  # Verify home directory exists and is accessible
+  if [[ ! -d ~ ]]; then
+    echo "<unavailable>"
+    return
   fi
 
-  echo "${HOME_FREE}"
+  local home_free
+  
+  # Use df with -l and parse by mountpoint column ($NF)
+  # Handles both one-line output and wrapped two-line output (RHEL6)
+  if command -v timeout >/dev/null 2>&1; then
+    home_free=$(timeout 1 df -hl ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $4; else print $3; exit }')
+  else
+    home_free=$(df -hl ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $4; else print $3; exit }')
+  fi
+
+  # Fallback: try without -l flag if -l not supported
+  if [[ -z "${home_free}" ]]; then
+    if command -v timeout >/dev/null 2>&1; then
+      home_free=$(timeout 1 df -h ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $4; else print $3; exit }')
+    else
+      home_free=$(df -h ~ 2>/dev/null | awk 'NR>1 && NF>=5 && $NF ~ /^\// { if (NF >= 6) print $4; else print $3; exit }')
+    fi
+  fi
+
+  echo "${home_free:-<unavailable>}"
 
 } # display_home_size_free()
 
@@ -275,7 +451,7 @@ function display_mem_total()
     # Check if available
     if sysctl -n hw.memsize  >/dev/null 2>&1; then
       MEM_SIZE=$(sysctl -n hw.memsize)
-      MEM_SIZE=$( echo "${MEM_SIZE} / 1024" | bc )
+      MEM_SIZE=$(_greeting_calc "${MEM_SIZE} / 1024")
     fi
   fi
 
@@ -284,16 +460,16 @@ function display_mem_total()
     # Check if available
     if sysctl -n hw.physmem  >/dev/null 2>&1; then
       MEM_SIZE=$(sysctl -n hw.physmem)
-      MEM_SIZE=$( echo "${MEM_SIZE} / 1024" | bc )
+      MEM_SIZE=$(_greeting_calc "${MEM_SIZE} / 1024")
     fi
   fi
 
 
   # Convert kB into GB)
   if [[ -z "$MEM_SIZE" ]]; then
-    MEM_SIZE="---"
+    MEM_SIZE="<unavailable>"
   else
-    MEM_SIZE=$( echo "scale=1 ; ${MEM_SIZE} / 1024 / 1024" | bc )
+    MEM_SIZE=$(_greeting_calc "${MEM_SIZE} / 1024 / 1024")
   fi
 
   echo "${MEM_SIZE}"
@@ -310,39 +486,51 @@ function display_mem_total()
 # ----------------------------------------------------------------------------
 function display_mem_free()
 {
-  # Attempt #1: Parse /proc/meminfo for memory (in kB)
+  # Attempt #1: Parse /proc/meminfo for memory (in kB) - MemAvailable preferred
   if [ -f "/proc/meminfo" ]; then
     MEM_FREE=$( awk '/MemAvailable/ { print $2 }' /proc/meminfo )
   fi
 
-  # Attempt #2: Parse /proc/meminfo for memory (in kB)
+  # Attempt #2: Parse /proc/meminfo for memory (in kB) - MemFree fallback
   if [[ -z "$MEM_FREE" ]]; then
-    # Try memFree as an alternate
     if [ -f "/proc/meminfo" ]; then
       MEM_FREE=$( awk '/MemFree/ { print $2 }' /proc/meminfo )
     fi
   fi
 
-  # Attempt #3: Parse sysctl results for memory (in bytes)  (FreeBSD)
+  # Attempt #3: Parse sysctl results for memory (in bytes) - macOS
   if [[ -z "$MEM_FREE" ]]; then
-    # Check if available
-    if sysctl -n hw.pagesize  >/dev/null 2>&1; then
-      page_size=$(sysctl -n hw.pagesize)
-
-      # Check if available
-      if sysctl -n vm.stats.vm.v_free_count  >/dev/null 2>&1; then
-        free_bytes_per_page=$(sysctl -n vm.stats.vm.v_free_count)
-        MEM_FREE=$( echo "${page_size} * ${free_bytes_per_page} / 1024" | bc )
+    if command -v vm_stat >/dev/null 2>&1; then
+      # macOS vm_stat gives pages, need to multiply by page size
+      local page_size
+      page_size=$(sysctl -n hw.pagesize 2>/dev/null)
+      if [[ -n "${page_size}" ]]; then
+        local free_pages
+        free_pages=$(vm_stat | awk '/Pages free/ { print $3 }' | tr -d '.')
+        if [[ -n "${free_pages}" ]]; then
+          MEM_FREE=$(_greeting_calc "${page_size} * ${free_pages} / 1024")
+        fi
       fi
     fi
   fi
 
-
-  # Convert kB into GB)
+  # Attempt #4: Parse sysctl results for memory (in bytes) - FreeBSD
   if [[ -z "$MEM_FREE" ]]; then
-    MEM_FREE="---"
+    if sysctl -n hw.pagesize >/dev/null 2>&1; then
+      page_size=$(sysctl -n hw.pagesize)
+
+      if sysctl -n vm.stats.vm.v_free_count >/dev/null 2>&1; then
+        free_bytes_per_page=$(sysctl -n vm.stats.vm.v_free_count)
+        MEM_FREE=$(_greeting_calc "${page_size} * ${free_bytes_per_page} / 1024")
+      fi
+    fi
+  fi
+
+  # Convert kB into GB
+  if [[ -z "$MEM_FREE" ]] || [[ "$MEM_FREE" == "<calc_error>" ]]; then
+    MEM_FREE="<unavailable>"
   else
-    MEM_FREE=$( echo "scale=1 ;${MEM_FREE} / 1024 / 1024" | bc )
+    MEM_FREE=$(_greeting_calc "${MEM_FREE} / 1024 / 1024")
   fi
 
   echo "${MEM_FREE}"
@@ -438,30 +626,43 @@ function display_greeting()
   # Fetch system information
   local sys_user
   sys_user="$USER"
+
   local sys_host
   sys_host=$(hostname)
+
   local sys_kernel_name
   sys_kernel_name=$(uname -s)
+
   local sys_kernel_rel
   sys_kernel_rel=$(uname -r)
+
   local sys_kernel_arch
   sys_kernel_arch=$(uname -m)
+
   local sys_os_version
   sys_os_version=$(display_os_version)
+
   local sys_cpu
   sys_cpu=$(display_processor_name)
+
   local sys_cpu_cores
   sys_cpu_cores=$(display_num_cpu_cores)
+
   local sys_cpu_threads
   sys_cpu_threads=$(display_num_cpu_hwthreads)
+
   local sys_homedir_size
   sys_homedir_size=$(display_home_size_total)
+
   local sys_homedir_free
   sys_homedir_free=$(display_home_size_free)
+
   local sys_mem_size
   sys_mem_size=$(display_mem_total)
+
   local sys_mem_free
   sys_mem_free=$(display_mem_free)
+
   local sys_uptime
   sys_uptime=$(display_system_uptime)
 
