@@ -28,7 +28,7 @@ export oTC_CYN='\033[0;96m'
 export oTC_WHT='\033[0;97m'
 export oTC_OFF='\033[0m'
 
-# HEXIDECIMAL (useful for 'sed' commands)
+# HEXADECIMAL (useful for 'sed' commands)
 export xTC_BLK='\x1b[0;30m'
 export xTC_GRY='\x1b[0;37m'
 export xTC_DRK='\x1b[0;90m'
@@ -74,6 +74,10 @@ export  TC_OFF=$oTC_OFF
 #  DESCRIPTION  : This is a general-purpose function to ask Yes/No questions
 #                 in Bash, either with or without a default answer. It keeps
 #                 repeating the question until it gets a valid answer.
+#
+#                 Note: This function is interactive-only because it reads
+#                 from /dev/tty (it is not suitable for non-interactive
+#                 shell contexts without a controlling TTY).
 #
 #                 Example:  Default to 'Yes' if the user presses enter
 #                           without giving an answer:
@@ -186,11 +190,11 @@ function colorize_8bit()
 #                 Example usage, colorizing a log file and highlighting
 #                 every occurance of the string "ERROR" in the file:
 #
-#                    tail -n +1 -f logfile.txt | colorize_gradient_fast "ERROR"
+#                    tail -n +1 -f logfile.txt | colorize_gradient "ERROR"
 #
 #                 With multiple strings to highlight in multiple colors:
 #
-#                    tail -f file.txt | colorize_gradient_fast           \
+#                    tail -f file.txt | colorize_gradient                \
 #                                         "ERROR"                        \
 #                                         --color "WARN"         yellow  \
 #                                         --color "Job complete" green
@@ -755,6 +759,213 @@ colorize_gradient_fixed() {
 
 
 # ----------------------------------------------------------------------------
+#  FUNCTION NAME: glibc_path
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Display the fully-qualified path to the system GLIBC
+#                 library file used by a representative system executable
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function glibc_path()
+{
+    local sample_exec
+    local glibc_path
+    local system_path
+
+    # Resolve a trusted system binary using a sanitized system PATH.
+    system_path=$(command -p getconf PATH 2> /dev/null)
+    if [[ -z "${system_path}" ]]; then
+        system_path='/usr/bin:/bin'
+    fi
+
+    sample_exec=$(PATH="${system_path}" type -P ls 2> /dev/null)
+    if [[ -z "${sample_exec}" ]]; then
+        echo "Error: unable to locate trusted system 'ls' executable" >&2
+        return 1
+    fi
+
+    # Use the trusted system binary to locate the system GLIBC library.
+    glibc_path=$(ldd "${sample_exec}" | awk '
+        /libc\./ {
+            for (i = 1; i <= NF; i++) {
+                if ($i == "=>" && (i + 1) <= NF) {
+                    print $(i + 1)
+                    exit
+                }
+            }
+            if ($1 ~ /^\//) {
+                print $1
+                exit
+            }
+        }
+    ')
+
+    # Validate that we found a path and that it points to a file
+    if [[ -z "${glibc_path}" || ! -f "${glibc_path}" ]]; then
+        echo "Error: unable to resolve GLIBC library path from '${sample_exec}'" >&2
+        return 1
+    fi
+
+    # Output the GLIBC library path
+    printf '%s\n' "${glibc_path}"
+
+} # glibc_path()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: glibc_version_runtime
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Execute the GLIBC library and display its runtime release
+#                 version string.
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function glibc_version_runtime()
+{
+    local glibc_path_value
+    local glibc_version
+
+    # Get the path to the GLIBC library
+    glibc_path_value=$(glibc_path)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    # Execute the GLIBC library file and extract its runtime release string.
+    glibc_version=$("${glibc_path_value}" 2>&1                           \
+             | sed -nE 's/.*release version ([0-9]+(\.[0-9]+)+).*/\1/p'  \
+             | head -n 1)
+
+    if [[ -z "${glibc_version}" ]]; then
+        echo "Error: unable to extract GLIBC runtime version from '${glibc_path_value}'" >&2
+        return 1
+    fi
+
+    # Output the GLIBC runtime version string
+    printf '%s\n' "${glibc_version}"
+
+} # glibc_version_runtime()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: glibc_versions_raw
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Display GLIBC symbol versions exported by the system GLIBC
+#                 library file, sorted from oldest to newest with duplicates
+#                 removed.
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function glibc_versions_raw()
+{
+    local glibc_path_value
+    local versions_raw
+
+    # Get the path to the GLIBC library
+    glibc_path_value=$(glibc_path)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    # Ensure required tooling is available.
+    if ! command -v objdump > /dev/null 2>&1; then
+        echo "Error: objdump command not found" >&2
+        return 1
+    fi
+
+    # Use 'objdump' to list dynamic symbols, extract only numeric GLIBC tags
+    # (for example GLIBC_2.17), strip the prefix, and sort uniquely.
+    versions_raw=$(objdump -T "${glibc_path_value}"                   \
+                               | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)*'   \
+                               | sed 's/^GLIBC_//'                    \
+                               | sort -Vu)
+
+    if [[ -z "${versions_raw}" ]]; then
+        echo "Error: no GLIBC symbol versions found in '${glibc_path_value}'" >&2
+        return 1
+    fi
+
+    printf '%s\n' "${versions_raw}"
+
+} # glibc_versions_raw()
+
+
+# ----------------------------------------------------------------------------
+#  FUNCTION NAME: glibc_versions
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Display GLIBC versions in a variety of formats
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function glibc_versions()
+{
+    local glibc_location
+    local glibc_version_runtime_value
+    local versions_raw
+    local versions_tagged
+
+    # Get the path to the GLIBC library
+    glibc_location=$(glibc_path)
+    if [[ -z "${glibc_location}" ]]; then
+        return 1
+    fi
+
+    # Get the GLIBC runtime version string
+    glibc_version_runtime_value=$(glibc_version_runtime)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    # Get the raw GLIBC symbol versions exported by the system GLIBC library
+    versions_raw=$(glibc_versions_raw)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+
+    # Add "glibc_v" prefix to each version for tagging purposes
+    versions_tagged=$(printf '%s\n' "${versions_raw}" | sed '/^$/d; s/^/glibc_v/')
+
+
+    # Display the GLIBC location and supported versions in various formats
+    printf '\n'
+    printf '%s\n' "----------------------------------------------------"
+    printf 'GLIBC location:\n'
+    printf '%s\n' "----------------------------------------------------"
+    printf '%s\n' "${glibc_location}"
+    printf '\n'
+
+    printf '%s\n' "----------------------------------------------------"
+    printf 'GLIBC runtime version:\n'
+    printf '%s\n' "----------------------------------------------------"
+    printf '%s\n' "${glibc_version_runtime_value}"
+    printf '\n'
+
+    printf '%s\n' "----------------------------------------------------"
+    printf 'GLIBC supported versions:\n'
+    printf '%s\n' "----------------------------------------------------"
+    printf '%s\n' "${versions_raw}"
+    printf '\n'
+
+    printf '%s\n' "----------------------------------------------------"
+    printf 'GLIBC supported versions (tagged):\n'
+    printf '%s\n' "----------------------------------------------------"
+    printf '%s\n' "${versions_tagged}" | sed 's/^/- /'
+    printf '\n'
+
+    printf '%s\n' "----------------------------------------------------"
+    printf 'GLIBC supported versions (tagged, comma-separated):\n'
+    printf '%s\n' "----------------------------------------------------"
+    printf '%s\n' "${versions_tagged}"                                      \
+                        | sed '/^$/d'                                       \
+                        | awk 'NR == 1 { printf "%s", $0; next }            \
+                                       { printf ", %s", $0 } END            \
+                                       { printf "\n" }'
+    printf '\n'
+
+} # glibc_versions()
+
+
+# ----------------------------------------------------------------------------
 #  FUNCTION NAME: find_command_location
 # ----------------------------------------------------------------------------
 #  DESCRIPTION  : Find the source location of a command
@@ -894,6 +1105,12 @@ function print_rainbow_line()
      c='-'
   else
      c=$1
+  fi
+
+  # Validate line length argument (must be positive integer)
+  if ! [[ "$count_max" =~ ^[0-9]+$ ]] || (( count_max < 1 )); then
+      echo "Error: line length must be a positive integer" >&2
+      return 1
   fi
 
 
@@ -1090,6 +1307,10 @@ export -f colorize_gradient
 export -f colorize_gradient_24bit
 export -f colorize_gradient_fixed
 export -f colorize_gradient_fixed_generate_palette
+export -f glibc_path
+export -f glibc_version_runtime
+export -f glibc_versions_raw
+export -f glibc_versions
 export -f find_command_location
 export -f xterm_with_color
 export -f xterm_set_title
