@@ -27,15 +27,30 @@ source ~/.bashrc
 ## What the installer does
 
 - Creates a timestamped backup in `~/DOTFILE_BACKUPS/...`
+- Runs preflight checks (required source paths, writable `$HOME`, etc.)
 - Copies this repo’s `dotfiles/` content to `~/.dotfiles`
 - Replaces user config files with symlinks to `~/.dotfiles/...`
+- Verifies installed symlinks after installation
 - Leaves `~/.bash_settings_custom` in place (if present)
+
+## Installer options
+
+```bash
+./dotfiles/create_homedir_symlinks.sh [options]
+```
+
+- `--dry-run` : print planned actions without modifying files
+- `--backup-only` : create backup(s) only, skip install/symlink stage
+- `--restore-latest` : restore files from latest backup folder in `~/DOTFILE_BACKUPS`
+- `-h` / `--help` : show usage help
 
 ## Updating
 
 1. Pull latest repo changes.
-2. Re-run `dotfiles/create_homedir_symlinks.sh`.
+2. Re-run `./dotfiles/create_homedir_symlinks.sh`.
 3. Run `source ~/.bashrc` (or open a new shell).
+
+Note: each run creates a new timestamped backup folder.
 
 ## Customization
 

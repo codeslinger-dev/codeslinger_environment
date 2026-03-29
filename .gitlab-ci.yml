@@ -1,31 +1,32 @@
 stages:
     - install
     - test
-    - finalize
 
 
 script_install:
     stage: install
+    tags:
+        - linux
+        - rhel6
     script:
+        - set -euo pipefail
         - echo "=============================================================="
-        - echo "Installing scripts.."
-        - echo " - TODO "
+        - 'echo "Install stage: validating installer script syntax"'
+        - bash -n dotfiles/create_homedir_symlinks.sh
+        - echo "Install stage complete"
         - echo "=============================================================="
 
 
 script_test:
     stage: test
+    tags:
+        - linux
     script:
+        - set -euo pipefail
         - echo "=============================================================="
-        - echo "Testing scripts.."
-        - echo " - TODO "
-        - echo "=============================================================="
-
-
-finalize:
-    stage: finalize
-    script:
-        - echo "=============================================================="
-        - echo "CI/CD Pipeline Complete"
+        - 'echo "Test stage: optional shellcheck + dry-run installer"'
+        - if command -v shellcheck >/dev/null 2>&1; then shellcheck dotfiles/create_homedir_symlinks.sh; else echo "shellcheck not installed in runner image; skipping"; fi
+        - bash dotfiles/create_homedir_symlinks.sh --dry-run --backup-only
+        - echo "Test stage complete"
         - echo "=============================================================="
 
