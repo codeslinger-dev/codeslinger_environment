@@ -20,8 +20,7 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # -- Local Home Directory ----------------------------------------------------
-LOCAL_BASH_PATH=~
-
+LOCAL_BASH_PATH="$HOME"
 
 # -- History settings --------------------------------------------------------
 shopt -s histappend
@@ -42,9 +41,7 @@ export HISTIGNORE='ls:la:ll:cd:pwd:exit:history:h:hs:clear:fg:bg:jobs'
 # -- Correct small errors in directory names given to the `cd` buildtin ------
 shopt -s cdspell
 
-# -- Che
-# -- Error handling trap (optional: shows line number on error) --------------
-# Uncomment to enable: trap 'echo "Command failed at line $LINENO"' ERRck that hashed commands still exist before running them --------------
+# -- Check that hashed commands still exist before running them --------------
 shopt -s checkhash
 
 # -- Expand aliases in shell scripts -----------------------------------------
@@ -58,9 +55,7 @@ export FIGNORE='~:.o:.pyc:.git:.swp'
 
 # -- Extended globbing patterns for flexible path matching -------------------
 shopt -s extglob       # Enable ?(pattern|list) !() *() +() @() patterns
-shopt -s nullglob      # Don't return glob if no matches found
 shopt -s globstar      # Enable ** recursive glob expansion
-shopt -s dotglob       # Include dotfiles in glob expansion
 
 # -- Error handling trap (optional: shows line number on error) --------------
 # Uncomment to enable: trap 'echo "Command failed at line $LINENO"' ERR
@@ -102,15 +97,15 @@ fi
 
 
 # -- Setup git-prompt variables ----------------------------------------------
-if [ -f  ${LOCAL_BASH_PATH}/.bash_config_files/.git_prompt ]; then
-  source ${LOCAL_BASH_PATH}/.bash_config_files/.git_prompt
+if [ -f  "${LOCAL_BASH_PATH}/.bash_config_files/.git_prompt" ]; then
+  source "${LOCAL_BASH_PATH}/.bash_config_files/.git_prompt"
 fi
 
 
 # -- Define the Bash prompt --------------------------------------------------
 if [ "$color_prompt" = yes ]; then
-   if [[ -f  ${LOCAL_BASH_PATH}/.bash_config_files/.bash_prompt ]]; then
-      source ${LOCAL_BASH_PATH}/.bash_config_files/.bash_prompt
+   if [[ -f  "${LOCAL_BASH_PATH}/.bash_config_files/.bash_prompt" ]]; then
+      source "${LOCAL_BASH_PATH}/.bash_config_files/.bash_prompt"
    else
       PS1="\n\[\033[01;34m\]\w\[\033[00m\]\n[\d \@] \[\033[01;32m\]\u @ \h\[\033[00m\]:  "
    fi
@@ -123,14 +118,11 @@ unset force_color_prompt
 
 
 # -- Set preferred editor for local and remote sessions ----------------------
-if [[ -n $SSH_CONNECTION ]]; then
-    export EDITOR='vim'
-elif command -v gvim > /dev/null; then
-    export EDITOR='gvim'
-elif command -v vim > /dev/null; then
-    export EDITOR='vim'
-else
-    export EDITOR='vi'
+export EDITOR
+if   [[ -n $SSH_CONNECTION ]];  then EDITOR='vim'
+elif type -P gvim &>/dev/null;  then EDITOR='gvim'
+elif type -P vim  &>/dev/null;  then EDITOR='vim'
+else                                 EDITOR='vi'
 fi
 
 
@@ -138,7 +130,8 @@ fi
 #      F: exit if the entire file can be displayed in one screen
 #      R: Show ANSI colors
 #      X: Prevent clearing the screen when exiting
-export LESS="FRX"
+#      M: verbose prompt (shows line numbers and percentage)
+export LESS="FRXM"
 
 
 # -- Enable programmable completion features ---------------------------------
@@ -181,20 +174,20 @@ fi
 
 
 # -- Source functions --------------------------------------------------------
-if [ -f  ${LOCAL_BASH_PATH}/.bash_config_files/.bash_functions ]; then
-  source ${LOCAL_BASH_PATH}/.bash_config_files/.bash_functions
+if [ -f  "${LOCAL_BASH_PATH}/.bash_config_files/.bash_functions" ]; then
+  source "${LOCAL_BASH_PATH}/.bash_config_files/.bash_functions"
 fi
 
 
 # -- Source aliases ----------------------------------------------------------
-if [ -f  ${LOCAL_BASH_PATH}/.bash_config_files/.bash_aliases ]; then
-  source ${LOCAL_BASH_PATH}/.bash_config_files/.bash_aliases
+if [ -f  "${LOCAL_BASH_PATH}/.bash_config_files/.bash_aliases" ]; then
+  source "${LOCAL_BASH_PATH}/.bash_config_files/.bash_aliases"
 fi
 
 
 # -- Source any per-host custom settings -------------------------------------
-if [ -f  ${LOCAL_BASH_PATH}/.bash_settings_custom ]; then
-  source ${LOCAL_BASH_PATH}/.bash_settings_custom
+if [ -f  "${LOCAL_BASH_PATH}/.bash_settings_custom" ]; then
+  source "${LOCAL_BASH_PATH}/.bash_settings_custom"
 fi
 
 
@@ -206,8 +199,8 @@ export PATH
 
 
 # -- Display login greeting --------------------------------------------------
-if [ -f  ${LOCAL_BASH_PATH}/.bash_config_files/.bash_greeting ]; then
-  source ${LOCAL_BASH_PATH}/.bash_config_files/.bash_greeting
+if [ -f  "${LOCAL_BASH_PATH}/.bash_config_files/.bash_greeting" ]; then
+  source "${LOCAL_BASH_PATH}/.bash_config_files/.bash_greeting"
   display_greeting
 fi
 

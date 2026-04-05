@@ -95,10 +95,19 @@ endif
 " -- Setup (Indention) -------------------------------------------------------
 set tabstop=4                   " -- number of visual spaces per tab
 set softtabstop=4               " -- number of spaces per tab
+set shiftwidth=4                " -- indent step size (match tabstop)
+set shiftround                  " -- round indents to multiples of shiftwidth
 
 
 " -- Setup (Indention - replaces tabs w/ spaces for C/C++ files) -------------
 autocmd FileType c,cpp set expandtab
+
+
+" -- Setup (File Handling) ---------------------------------------------------
+set encoding=utf-8              " -- default to UTF-8 (internal encoding)
+set fileformats=unix,dos,mac    " -- detect line endings in this order
+set undofile                    " -- persist undo history across sessions (7.3+)
+set undodir=~/.vim/undo//       " -- store undo files here (create dir if needed)
 
 
 " -- Setup (Editing) ---------------------------------------------------------
@@ -109,6 +118,13 @@ set showmatch                   " -- highlight matching blocks [{()}]
 set matchtime=6                 " -- highlight matches for 0.x seconds
 set linebreak                   " -- avoid wrapping in the middle of a word
 set backspace=indent,eol,start  " -- allow backspace over everything (insert)
+
+
+" -- Setup (Visual) ----------------------------------------------------------
+set showcmd                     " -- show partial command in status line
+set splitright                  " -- vsplit opens new pane to the right
+set splitbelow                  " -- split opens new pane below
+set ttimeoutlen=50              " -- reduce Esc key delay
 
 
 " -- Setup (Visualize trailing spaces and tabs) ------------------------------

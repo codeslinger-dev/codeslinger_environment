@@ -154,10 +154,15 @@ function confirm_choice()
 # ----------------------------------------------------------------------------
 function colorize()
 {
-    while IFS= read -r -n 1 -d '' c ; do
-        color=$((RANDOM % 7 + 91))
-        printf '\033[0;%dm%s\e[0m' "$color" "$c"
-    done
+    awk 'BEGIN { srand() }
+    {
+        out = ""
+        for (i = 1; i <= length($0); i++) {
+            color = int(rand() * 7) + 91
+            out = out sprintf("\033[0;%dm%s\033[0m", color, substr($0, i, 1))
+        }
+        print out
+    }'
 
 } # colorize()
 
@@ -172,10 +177,15 @@ function colorize()
 # ----------------------------------------------------------------------------
 function colorize_8bit()
 {
-    while IFS= read -r -n 1 -d '' c ; do
-        color=$((RANDOM % 256))
-        printf '\033[38;5;%dm%s\033[0m' "$color" "$c"
-    done
+    awk 'BEGIN { srand() }
+    {
+        out = ""
+        for (i = 1; i <= length($0); i++) {
+            color = int(rand() * 256)
+            out = out sprintf("\033[38;5;%dm%s\033[0m", color, substr($0, i, 1))
+        }
+        print out
+    }'
 
 } # colorize_8bit()
 
@@ -205,59 +215,14 @@ function colorize_8bit()
 function colorize_gradient()
 {
     local width
-    width=$(tput cols)
-
-    # Generate dynamic palette based on terminal width
-    local -a palette_colors=()
-    local denom=$(( width > 1 ? width - 1 : 1 ))
-
-    # Generate colors using HSV hue rotation (0-300 degrees)
-    for ((x=0; x<width; x++)); do
-        local hue=$(( (x * 300) / denom ))
-        local r g b
-
-        # Convert HSV to RGB using standard formula
-        if   ((hue <  60)); then 
-            r=5; g=$((hue * 5 / 60)); b=0
-        elif ((hue < 120)); then 
-            r=$((5 - (hue - 60) * 5 / 60)); g=5; b=0
-        elif ((hue < 180)); then 
-            r=0; g=5; b=$(((hue - 120) * 5 / 60))
-        elif ((hue < 240)); then 
-            r=0; g=$((5 - (hue - 180) * 5 / 60)); b=5
-        elif ((hue < 300)); then 
-            r=$(((hue - 240) * 5 / 60)); g=0; b=5
-        else 
-            r=5; g=0; b=5
-        fi
-
-        # Convert RGB (0-5) to ANSI 256 color code (16-255)
-        local ansi_code=$((16 + r*36 + g*6 + b))
-        palette_colors+=("$ansi_code $ansi_code")  # repeat each color for smoothing
-    done
-
-    local palette="${palette_colors[*]}"
-    local palette_len=$((width * 2))
+    width=$(tput cols 2>/dev/null) || width=80
+    [[ "$width" =~ ^[0-9]+$ ]] && (( width > 0 )) || width=80
 
     declare -A highlight_map=()
     declare -A color_codes=(
         [red]=196 [green]=46 [yellow]=226 [blue]=21
         [magenta]=201 [cyan]=51 [white]=231 [black]=16
     )
-
-    # Create a LUT for auto-contrasting text colors (white vs black)
-    declare -a best_text_contrast_colors
-    for code in {16..255}; do
-        r=$(( ((code-16)/36)*51 ))
-        g=$(( (((code-16)%36)/6)*51 ))
-        b=$(( ((code-16)%6)*51 ))
-        Y=$(( (299*r + 587*g + 114*b)/1000 ))
-        if (( Y > 128 )); then
-            best_text_contrast_colors[$code]=30   # black
-        else
-            best_text_contrast_colors[$code]=37   # white
-        fi
-    done
 
     # Parse keyword/color arguments
     local pre_color_args=()
@@ -287,25 +252,28 @@ function colorize_gradient()
         fi
     done
 
-    # Build awk keyword array and contrast LUT
+    # Build awk keyword array (palette and contrast LUT computed in awk BEGIN)
     local awk_kw_array=""
     for kw in "${!highlight_map[@]}"; do
         awk_kw_array+="kw[\"$kw\"]=${highlight_map[$kw]};"
     done
-    
-    local awk_contrast_array=""
-    for code in {16..255}; do
-        awk_contrast_array+="contrast[$code]=${best_text_contrast_colors[$code]};"
-    done
 
-    # Pipe through awk with dynamic palette and full contrast LUT
-    awk -v palette="$palette" \
-        -v plen="$palette_len" \
-        -v width="$width" \
-        -v kwdefs="$awk_kw_array" \
-        -v contrast_defs="$awk_contrast_array" '
+    awk -v width="$width" \
+        -v kwdefs="$awk_kw_array" '
         BEGIN {
-            n=split(palette, P, " ")
+            # Build HSV->ANSI 256 palette (hue rotation 0-300 degrees)
+            denom = (width > 1) ? width - 1 : 1
+            for (x = 0; x < width; x++) {
+                hue = int((x * 300) / denom)
+                if      (hue <  60) { r=5; g=int(hue*5/60);           b=0 }
+                else if (hue < 120) { r=int((120-hue)*5/60); g=5;     b=0 }
+                else if (hue < 180) { r=0;  g=5;             b=int((hue-120)*5/60) }
+                else if (hue < 240) { r=0;  g=int((240-hue)*5/60);    b=5 }
+                else if (hue < 300) { r=int((hue-240)*5/60); g=0;     b=5 }
+                else                { r=5;  g=0;             b=5 }
+                P[x] = 16 + r*36 + g*6 + b
+            }
+            # Parse keyword definitions
             split(kwdefs, kv, ";")
             for (i in kv) {
                 if (kv[i] == "") continue
@@ -313,14 +281,6 @@ function colorize_gradient()
                 sub(/^kw\["/, "", pair[1])
                 sub(/"\]$/, "", pair[1])
                 KW[pair[1]] = pair[2]
-            }
-            split(contrast_defs, cv, ";")
-            for (i in cv) {
-                if (cv[i] == "") continue
-                split(cv[i], pair, "=")
-                sub(/^contrast\[/, "", pair[1])
-                sub(/\]$/, "", pair[1])
-                contrast[pair[1]] = pair[2]
             }
         }
         {
@@ -352,7 +312,7 @@ function colorize_gradient()
                     continue
                 }
                 idx = ((col - NR) % width + width) % width
-                out = out sprintf("\033[38;5;%sm%s", P[idx*2+1], c)
+                out = out sprintf("\033[38;5;%dm%s", P[idx], c)
                 j++
                 col++
             }
@@ -391,32 +351,8 @@ function colorize_gradient()
 function colorize_gradient_24bit()
 {
     local width
-    width=$(tput cols)
-    
-    # Generate dynamic 24-bit RGB palette based on terminal width
-    # Uses 0-1530 range for smooth 6-segment rainbow (R→Y→G→C→B→M)
-    local -a palette_colors=()
-    local denom=$(( width > 1 ? width - 1 : 1 ))
-
-    # Generate RGB values using 1530-point rainbow
-    for ((x=0; x<width; x++)); do
-        local pos=$(( x * 1530 / denom ))
-        local r g b
-
-        # Convert position to RGB
-        if   (( pos < 255  )); then r=255;           g=$pos;          b=0
-        elif (( pos < 510  )); then r=$((510-pos));  g=255;           b=0
-        elif (( pos < 765  )); then r=0;             g=255;           b=$((pos-510))
-        elif (( pos < 1020 )); then r=0;             g=$((1020-pos)); b=255
-        elif (( pos < 1275 )); then r=$((pos-1020)); g=0;             b=255
-        else                        r=255;           g=0;             b=$((1530-pos))
-        fi
-
-        palette_colors+=("$r:$g:$b")
-    done
-
-    local palette="${palette_colors[*]}"
-    local palette_len=$width
+    width=$(tput cols 2>/dev/null) || width=80
+    [[ "$width" =~ ^[0-9]+$ ]] && (( width > 0 )) || width=80
 
     declare -A kw_highlight_map=()    # keyword -> background ANSI code
 
@@ -425,20 +361,6 @@ function colorize_gradient_24bit()
         [red]=196 [green]=46 [yellow]=226 [blue]=21
         [magenta]=201 [cyan]=51 [white]=231 [black]=16
     )
-
-    # Create a LUT for auto-contrasting text colors (white vs black)
-    declare -a best_text_contrast_colors
-    for code in {16..255}; do
-        r=$(( ((code-16)/36)*51 ))
-        g=$(( (((code-16)%36)/6)*51 ))
-        b=$(( ((code-16)%6)*51 ))
-        lum=$(( (299*r + 587*g + 114*b)/1000 ))
-        if (( lum > 128 )); then
-            best_text_contrast_colors[$code]=30   # black
-        else
-            best_text_contrast_colors[$code]=37   # white
-        fi
-    done
 
     # Parse keyword/color arguments
     local pre_color_args=()
@@ -477,25 +399,28 @@ function colorize_gradient_24bit()
         fi
     done
 
-    # Build awk keyword array and contrast LUT
+    # Build awk keyword array (palette computed in awk BEGIN)
     local awk_kw_array=""
     for kw in "${!kw_highlight_map[@]}"; do
         awk_kw_array+="kw[\"$kw\"]=${kw_highlight_map[$kw]};"
     done
 
-    local awk_contrast_array=""
-    for code in {16..255}; do
-        awk_contrast_array+="contrast[$code]=${best_text_contrast_colors[$code]};"
-    done
-
-    # Pipe through awk with dynamic 24-bit RGB palette
-    awk -v palette="$palette" \
-        -v plen="$palette_len" \
-        -v width="$width" \
-        -v kwdefs="$awk_kw_array" \
-        -v contrast_defs="$awk_contrast_array" '
+    awk -v width="$width" \
+        -v kwdefs="$awk_kw_array" '
         BEGIN {
-            n=split(palette, P, " ")
+            # Build 24-bit RGB palette (6-segment rainbow, 1530-point range)
+            denom = (width > 1) ? width - 1 : 1
+            for (x = 0; x < width; x++) {
+                pos = int(x * 1530 / denom)
+                if      (pos <  255) { r=255;       g=pos;       b=0        }
+                else if (pos <  510) { r=510-pos;   g=255;       b=0        }
+                else if (pos <  765) { r=0;         g=255;       b=pos-510  }
+                else if (pos < 1020) { r=0;         g=1020-pos;  b=255      }
+                else if (pos < 1275) { r=pos-1020;  g=0;         b=255      }
+                else                 { r=255;       g=0;         b=1530-pos }
+                PR[x]=r; PG[x]=g; PB[x]=b
+            }
+            # Parse keyword definitions
             split(kwdefs, kv, ";")
             for (i in kv) {
                 if (kv[i] == "") continue
@@ -503,14 +428,6 @@ function colorize_gradient_24bit()
                 sub(/^kw\["/, "", pair[1])
                 sub(/"\]$/, "", pair[1])
                 KW[pair[1]] = pair[2]
-            }
-            split(contrast_defs, cv, ";")
-            for (i in cv) {
-                if (cv[i] == "") continue
-                split(cv[i], pair, "=")
-                sub(/^contrast\[/, "", pair[1])
-                sub(/\]$/, "", pair[1])
-                contrast[pair[1]] = pair[2]
             }
         }
         {
@@ -542,8 +459,7 @@ function colorize_gradient_24bit()
                     continue
                 }
                 idx = ((col - NR) % width + width) % width
-                split(P[idx+1], rgb, ":")
-                out = out sprintf("\033[38;2;%s;%s;%sm%s", rgb[1], rgb[2], rgb[3], c)
+                out = out sprintf("\033[38;2;%d;%d;%dm%s", PR[idx], PG[idx], PB[idx], c)
                 j++
                 col++
             }
@@ -575,7 +491,7 @@ function colorize_gradient_24bit()
 function colorize_gradient_fixed_generate_palette()
 {
     local length=${1:-54}
-    
+
     if (( length < 1 )); then
         echo "Error: palette length must be >= 1" >&2
         return 1
@@ -977,8 +893,10 @@ function find_command_location()
     if [[ $# -eq 1 ]] ; then
 
       if [[ "$(type -t "${1}")" == "function" ]] ; then
+        local old_extdebug; [[ $(shopt -p extdebug) == *-s* ]] && old_extdebug=1
         shopt -s extdebug
         declare -F "${1}"
+        [[ -z $old_extdebug ]] && shopt -u extdebug
       else
         type -a "${1}"
       fi
@@ -1011,8 +929,8 @@ function xterm_with_color()
 
     xterm -ls                 \
           -bd "${hl_color}"   \
-          -ms ${hl_color}     \
-          -cr ${hl_color}     \
+          -ms "${hl_color}"   \
+          -cr "${hl_color}"   \
           -rw                 \
           -title "[xterm]:" &
 
@@ -1089,7 +1007,7 @@ function xterm_invoke_su()
 # ----------------------------------------------------------------------------
 function print_rainbow_line()
 {
-    local color_array=("$TC_RED" "$TC_YEL" "$TC_GRN" "$TC_BLU" "$TC_CYN" "$TC_MAG")
+  local color_array=("$TC_RED" "$TC_YEL" "$TC_GRN" "$TC_BLU" "$TC_CYN" "$TC_MAG")
   local count_max=60
   local count=0
   local c='-'
@@ -1133,8 +1051,7 @@ function print_rainbow_line()
 
         printf "%b%b" "${col}" "$c"
 
-        count=$((count + 1))
-        count=$((count % 6))
+        (( count = (count + 1) % 6 ))
 
     done
 
@@ -1201,9 +1118,11 @@ function print_ansi_colors()
 # ----------------------------------------------------------------------------
 function log_get_current_timestamp()
 {
-    local time_now
-    time_now=$(date +"%Y-%m-%d %H:%M:%S")
-    echo "${time_now}"
+    if (( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 2) )); then
+        printf '%(%Y-%m-%d %H:%M:%S)T\n' -1
+    else
+        date +"%Y-%m-%d %H:%M:%S"
+    fi
 }
 
 
@@ -1274,22 +1193,22 @@ function log_test_all()
     echo -e ""
 
     log_error "log_error:  time is $(log_get_current_timestamp)"
-    sleep 0.1
+    sleep 0.1 2>/dev/null || sleep 1
 
     log_warn  "log_warn:   time is $(log_get_current_timestamp)"
-    sleep 0.1
+    sleep 0.1 2>/dev/null || sleep 1
 
     log_info  "log_info:   time is $(log_get_current_timestamp)"
-    sleep 0.1
+    sleep 0.1 2>/dev/null || sleep 1
 
     log_debug "log_debug:  time is $(log_get_current_timestamp)"
-    sleep 0.1
+    sleep 0.1 2>/dev/null || sleep 1
 
     log_na    "log_na:     time is $(log_get_current_timestamp)"
-    sleep 0.1
+    sleep 0.1 2>/dev/null || sleep 1
 
     log_echo  "log_echo:   time is $(log_get_current_timestamp)"
-    sleep 0.1
+    sleep 0.1 2>/dev/null || sleep 1
 
     echo -e ""
 
