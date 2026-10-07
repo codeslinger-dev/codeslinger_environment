@@ -893,10 +893,13 @@ function find_command_location()
     if [[ $# -eq 1 ]] ; then
 
       if [[ "$(type -t "${1}")" == "function" ]] ; then
-        local old_extdebug; [[ $(shopt -p extdebug) == *-s* ]] && old_extdebug=1
+        # 'declare -F' only reports a function's source file and line
+        # while 'extdebug' is on; restore its prior state afterward.
+        local extdebug_was_on=0
+        shopt -q extdebug && extdebug_was_on=1
         shopt -s extdebug
         declare -F "${1}"
-        [[ -z $old_extdebug ]] && shopt -u extdebug
+        (( extdebug_was_on )) || shopt -u extdebug
       else
         type -a "${1}"
       fi
@@ -1051,7 +1054,9 @@ function print_rainbow_line()
 
         printf "%b%b" "${col}" "$c"
 
-        (( count = (count + 1) % 6 ))
+        # Assignment form (not '(( ... ))') so a 0 result does not return
+        # a non-zero exit status that could trip 'set -e'.
+        count=$(( (count + 1) % 6 ))
 
     done
 
@@ -1118,10 +1123,18 @@ function print_ansi_colors()
 # ----------------------------------------------------------------------------
 function log_get_current_timestamp()
 {
+    # With a variable name in $1, assign into it via 'printf -v' (no
+    # subshell); with no argument, print the timestamp to stdout.
     if (( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 2) )); then
-        printf '%(%Y-%m-%d %H:%M:%S)T\n' -1
+        if [[ -n ${1:-} ]]; then
+            printf -v "$1" '%(%Y-%m-%d %H:%M:%S)T' -1
+        else
+            printf '%(%Y-%m-%d %H:%M:%S)T\n' -1
+        fi
+    elif [[ -n ${1:-} ]]; then
+        printf -v "$1" '%s' "$(date +'%Y-%m-%d %H:%M:%S')"
     else
-        date +"%Y-%m-%d %H:%M:%S"
+        date +'%Y-%m-%d %H:%M:%S'
     fi
 }
 
@@ -1143,7 +1156,7 @@ function log_error()
 {
     if [[ -z $DISABLE_LOG_LEVEL_ERROR ]]; then
       local time_now
-      time_now=$(log_get_current_timestamp)
+      log_get_current_timestamp time_now
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_RED}ERROR${TC_OFF}] ${1}" >&2
     fi
 } # log_error()
@@ -1152,7 +1165,7 @@ function log_warn()
 {
     if [[ -z $DISABLE_LOG_LEVEL_WARN ]]; then
       local time_now
-      time_now=$(log_get_current_timestamp)
+      log_get_current_timestamp time_now
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_YEL} WARN${TC_OFF}] ${1}" >&2
     fi
 } # log_warn()
@@ -1161,7 +1174,7 @@ function log_info()
 {
     if [[ -z $DISABLE_LOG_LEVEL_INFO ]]; then
       local time_now
-      time_now=$(log_get_current_timestamp)
+      log_get_current_timestamp time_now
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_MAG} INFO${TC_OFF}] ${1}" >&2
     fi
 } # log_info()
@@ -1170,7 +1183,7 @@ function log_debug()
 {
     if [[ -z $DISABLE_LOG_LEVEL_DEBUG ]]; then
       local time_now
-      time_now=$(log_get_current_timestamp)
+      log_get_current_timestamp time_now
       echo -e "${TC_DRK}${time_now}${TC_OFF} [${TC_GRN}DEBUG${TC_OFF}] ${1}" >&2
     fi
 } # log_debug()
@@ -1178,7 +1191,7 @@ function log_debug()
 function log_na()
 {
     local time_now
-    time_now=$(log_get_current_timestamp)
+    log_get_current_timestamp time_now
     echo -e "${TC_DRK}${time_now}${TC_OFF} [ --- ] ${1}" >&2
 } # log_na()
 

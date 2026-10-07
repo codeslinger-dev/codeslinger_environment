@@ -57,6 +57,10 @@ export FIGNORE='~:.o:.pyc:.git:.swp'
 shopt -s extglob       # Enable ?(pattern|list) !() *() +() @() patterns
 shopt -s globstar      # Enable ** recursive glob expansion
 
+# -- Locale settings  --------------------------------------------------------
+export   LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
 # -- Error handling trap (optional: shows line number on error) --------------
 # Uncomment to enable: trap 'echo "Command failed at line $LINENO"' ERR
 
