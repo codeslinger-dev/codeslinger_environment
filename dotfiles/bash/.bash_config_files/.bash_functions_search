@@ -5,8 +5,8 @@
 #
 # This file is intended to be "sourced" by .bash_functions:
 #
-#    if [ -f /<path>/.bash_functions_search ]; then
-#     source /<path>/.bash_functions_search
+#    if [ -f "${SCRIPT_DIR}/.bash_functions_search" ]; then
+#     source "${SCRIPT_DIR}/.bash_functions_search"
 #    fi
 #
 # ----------------------------------------------------------------------------
@@ -249,6 +249,20 @@ function func_find_follow_stats()
   return "${num_matches}"
 
 } # func_find_follow_stats()
+
+
+
+# ----------------------------------------------------------------------------
+#  EXPORT PUBLIC FUNCTIONS :  Allows these functions to be used in
+#                             non-interactive bash shell scripts
+# ----------------------------------------------------------------------------
+export -f func_find_undecorated
+export -f func_find_follow_undecorated
+export -f func_find
+export -f func_find_follow
+export -f func_find_stats
+export -f func_find_follow_stats
+
 
 
 # -- File has been sourced ---------------------------------------------------

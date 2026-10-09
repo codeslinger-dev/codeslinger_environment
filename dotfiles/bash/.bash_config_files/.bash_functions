@@ -5,8 +5,8 @@
 #
 # This file is intended to be "sourced" by .bashrc (or equivalent):
 #
-#    if [ -f <path>/.bash_functions ]; then
-#     source <path>/.bash_functions
+#    if [ -f "${SCRIPT_DIR}/.bash_functions" ]; then
+#     source "${SCRIPT_DIR}/.bash_functions"
 #    fi
 #
 #  Notes:  Bash functions can be defined multiple ways:
@@ -42,13 +42,19 @@ if [ -f  "${SCRIPT_DIR}/.bash_functions_common" ]; then
 fi
 
 
+# -- Source Colorize functions -----------------------------------------------
+if [ -f  "${SCRIPT_DIR}/.bash_functions_colorize" ]; then
+  source "${SCRIPT_DIR}/.bash_functions_colorize"
+fi
+
+
 # -- Source Search functions -------------------------------------------------
 if [ -f  "${SCRIPT_DIR}/.bash_functions_search" ]; then
   source "${SCRIPT_DIR}/.bash_functions_search"
 fi
 
 
-# -- Source GIT functions ----------------------------------------------------
+# -- Source Git functions ----------------------------------------------------
 if [ -f  "${SCRIPT_DIR}/.bash_functions_git" ]; then
   source "${SCRIPT_DIR}/.bash_functions_git"
 fi

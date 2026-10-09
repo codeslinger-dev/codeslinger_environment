@@ -5,8 +5,8 @@
 #
 # This file is intended to be "sourced" by .bashrc (or equivalent):
 #
-#    if [ -f /<path>/.bash_aliases_git ]; then
-#     source /<path>/.bash_aliases_git
+#    if [ -f "${SCRIPT_DIR}/.bash_aliases_git" ]; then
+#     source "${SCRIPT_DIR}/.bash_aliases_git"
 #    fi
 #
 # ----------------------------------------------------------------------------
@@ -372,6 +372,7 @@ alias          gmff='fn_git_merge_ff'
 
 fn_git_completion_register_alias  git-merge-ff  _git_merge
 fn_git_completion_register_alias          gmff  _git_merge
+
 
 
 # -- End of File  ------------------------------------------------------------
