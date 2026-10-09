@@ -58,7 +58,7 @@ Use `~/.bash_settings_custom` for machine-specific settings so updates do not ov
 
 ### Performance tuning
 
-**Disable command-not-found helper (Ubuntu/Mint):**
+**Disable command-not-found helper (some Ubuntu/Mint installs):**
 
 The command-not-found package can be extremely slow (50+ seconds on some systems). To disable:
 
@@ -102,8 +102,6 @@ export ENV_GIT_SHOW_UPSTREAM="git"
 - `ENV_GIT_SHOW_STASH` (default: `0`) - Shows `$` when stash exists.
 - `ENV_GIT_SHOW_UPSTREAM` (default: `"git"`) - Shows `<` (behind), `>` (ahead), `<>` (diverged), `=` (in sync).
 
-Setting `ENV_SKIP_COMMAND_NOT_FOUND=1` provides the biggest speedup on Ubuntu/Mint systems (eliminates 50+ second delay).
-
 ### Greeting customization
 
 The login greeting displays system information (CPU, RAM, uptime, etc.). Customize it with these environment variables:
@@ -115,14 +113,14 @@ export ENV_GREETING_ENABLED=0
 # Minimal mode: skip expensive operations (df, lscpu) on slow filesystems
 export ENV_GREETING_MINIMAL=1
 
-# Timeout per greeting function (seconds, default: 5)
+# Timeout per greeting function (seconds, default: 2)
 export ENV_GREETING_TIMEOUT=3
 ```
 
 **Available options:**
 - `ENV_GREETING_ENABLED` (default: `1`) - Set to `0` to disable greeting.
 - `ENV_GREETING_MINIMAL` (default: `0`) - Set to `1` to skip filesystem checks on NFS/slow storage.
-- `ENV_GREETING_TIMEOUT` (default: `5`) - Maximum seconds per greeting function before timeout.
+- `ENV_GREETING_TIMEOUT` (default: `2`) - Maximum seconds per greeting function before timeout.
 
 ## Repo layout
 
@@ -132,5 +130,3 @@ export ENV_GREETING_TIMEOUT=3
 - `dotfiles/create_homedir_symlinks.sh` → installer
 
 ---
-
-Maintainer note: keep this README focused on current end-user behavior and installation/update steps.

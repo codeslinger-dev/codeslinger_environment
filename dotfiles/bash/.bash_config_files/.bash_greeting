@@ -109,6 +109,28 @@ function _greeting_calc()
 
 
 # ----------------------------------------------------------------------------
+#  FUNCTION NAME: display_gcc_version
+# ----------------------------------------------------------------------------
+#  DESCRIPTION  : Display the GCC semantic version
+#                  ex:  9.3.0
+# ----------------------------------------------------------------------------
+#  PARAMETERS   : na
+# ----------------------------------------------------------------------------
+function display_gcc_version()
+{
+  if ! command -v gcc >/dev/null 2>&1; then
+    echo "<gcc unavailable>"
+    return
+  fi
+
+  # This idiom ensures we get the full semantic version of GCC, rather
+  # than just the major version, regardless of the system's default version.
+  echo "gcc $(gcc -dumpfullversion -dumpversion)"
+
+} # display_gcc_version()
+
+
+# ----------------------------------------------------------------------------
 #  FUNCTION NAME: display_system_uptime
 # ----------------------------------------------------------------------------
 #  DESCRIPTION  : Display the formatted system uptime
@@ -639,6 +661,9 @@ function display_greeting()
   local sys_kernel_arch
   sys_kernel_arch=$(uname -m)
 
+  local sys_gcc
+  sys_gcc=$(display_gcc_version)
+
   local sys_os_version
   sys_os_version=$(display_os_version)
 
@@ -674,7 +699,7 @@ function display_greeting()
   echo -e  "\e(0x\e(B ${TC_CYN}Date${TC_OFF} : $(date '+%Y %B %d') (${TC_GRN}$(date '+%A')${TC_OFF})"
   echo -e  "\e(0x\e(B ${TC_CYN}Time${TC_OFF} : $(date '+%r') ${TC_DRK}$(date '+%Z')${TC_OFF}"
   echo -e  "\e(0x\e(B ${TC_CYN}Host${TC_OFF} : ${TC_YEL}${sys_user}${TC_OFF} @ ${TC_YEL}${sys_host}${TC_OFF}"
-  echo -e  "\e(0x\e(B  - ${TC_MAG}system${TC_OFF}    : ${sys_kernel_name} ${TC_MAG}|${TC_OFF} ${sys_kernel_rel} ${TC_MAG}|${TC_OFF} ${sys_kernel_arch}"
+  echo -e  "\e(0x\e(B  - ${TC_MAG}system${TC_OFF}    : ${sys_kernel_name} ${TC_MAG}|${TC_OFF} ${sys_kernel_rel} ${TC_MAG}|${TC_OFF} ${sys_kernel_arch} ${TC_MAG}|${TC_OFF} ${sys_gcc}"
   echo -e  "\e(0x\e(B  - ${TC_MAG}os ver${TC_OFF}    : ${sys_os_version}"
   echo -e  "\e(0x\e(B  - ${TC_MAG}processor${TC_OFF} : ${sys_cpu} ${TC_MAG}|${TC_OFF} ${sys_cpu_cores}C/${sys_cpu_threads}T"
   echo -e  "\e(0x\e(B  - ${TC_MAG}ram${TC_OFF}       : ${sys_mem_size} GB total ${TC_MAG}|${TC_OFF} ${sys_mem_free} GB free"

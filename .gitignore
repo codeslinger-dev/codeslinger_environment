@@ -5,6 +5,8 @@ Thumbs.db
 *.swp
 *.swo
 .vscode/
+**/.vscode/
+
 
 # Shell / runtime artifacts
 *.log
